@@ -3,7 +3,9 @@ services:
   - type: web
     name: naga-sabot-frontend
     env: node
-    buildCommand: ./render-build.sh
+    buildCommand: |
+      npm install
+      npm run build
     startCommand: node dist/naga-sabot/server/server.mjs
     envVars:
       - key: NODE_ENV
@@ -15,10 +17,14 @@ services:
   - type: web
     name: naga-sabot-backend
     env: python
-    buildCommand: pip install -r flask-backend/requirements.txt
-    startCommand: cd flask-backend && gunicorn app:app
+    buildCommand: |
+      apt-get update && apt-get install -y build-essential python3-dev
+      pip install -r flask-backend/requirements.txt
+    startCommand: cd flask-backend && gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 0 app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0
+        value: 3.11.0
       - key: PORT
-        value: 10001 
+        value: 10001
+      - key: CUDA_VISIBLE_DEVICES
+        value: "-1" 
