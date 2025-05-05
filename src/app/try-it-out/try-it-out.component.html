@@ -1,0 +1,256 @@
+<app-header></app-header>
+<main class="min-h-screen">
+    <!-- banner -->
+    <section class="relative h-[400px] bg-[#ff3e3e] overflow-hidden">
+        <div class="absolute inset-0">
+            <img 
+              src="/assets/images/img2.jpg"
+              alt="People communicating in sign language"
+              class="w-full h-full object-cover"
+            />
+            <div class="absolute inset-0 bg-[#ff3e3e]/30"></div>
+          </div>
+
+    </section>
+  
+    <!-- get started -->
+    <section class="py-16 px-4 -mt-24 relative z-10">
+      <div class="max-w-4xl mx-auto">
+        <!-- main content -->
+        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <div class="p-8 md:p-12">
+            <!-- header -->
+            <div class="text-center mb-12">
+              <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-['Poppins'] tracking-tight">Get Started</h1>
+              <p class="text-gray-600 text-lg font-['Inter'] leading-relaxed">
+                You can either open your storage to upload a video or grant access to your camera to record yourself
+              </p>
+            </div>
+  
+            <!-- options -->
+            <div class="grid md:grid-cols-2 gap-8">
+              <!-- camera option -->
+              <div class="group relative bg-[#ff3e3e] rounded-2xl p-8 text-white hover:shadow-xl 
+                          transition-all duration-300 hover:-translate-y-1 flex flex-col">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full 
+                            blur-2xl transform group-hover:scale-150 transition-transform duration-700"></div>
+                
+                <div class="relative flex-1 flex flex-col">
+                  <div class="space-y-6">
+                    <div class="inline-block p-4 bg-white/10 rounded-xl">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    
+                    <div class="space-y-4">
+                      <h2 class="text-2xl font-bold font-['Poppins'] tracking-tight">Record via Camera</h2>
+                      <p class="text-white/90 leading-relaxed font-['Inter']">
+                        Record a video directly using your camera to begin the lip-reading process. 
+                        Ensure your face is clearly visible for accurate recognition.
+                      </p>
+                    </div>
+                  </div>
+  
+                  <div class="mt-auto pt-8">
+                    <button 
+                      (click)="openCameraModal()"
+                      class="w-full bg-white text-[#ff3e3e] px-6 py-3.5 rounded-xl font-bold
+                             hover:bg-opacity-90 transition-all duration-300 shadow-lg
+                             flex items-center justify-center gap-3 font-['Inter']"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span>Start Recording</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+  
+              <!-- upload option -->
+              <div class="group relative bg-[#ff3e3e] rounded-2xl p-8 text-white hover:shadow-xl 
+                          transition-all duration-300 hover:-translate-y-1 flex flex-col">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full 
+                            blur-2xl transform group-hover:scale-150 transition-transform duration-700"></div>
+                
+                <div class="relative flex-1 flex flex-col">
+                  <div class="space-y-6">
+                    <div class="inline-block p-4 bg-white/10 rounded-xl">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                    </div>
+                    
+                    <div class="space-y-4">
+                      <h2 class="text-2xl font-bold font-['Poppins'] tracking-tight">Upload via Device Storage</h2>
+                      <p class="text-white/90 leading-relaxed font-['Inter']">
+                        Upload a video clip from your device storage to start the lip-reading process. 
+                        Ensure the video clearly shows the speaker's face for accurate results.
+                      </p>
+                    </div>
+                  </div>
+  
+                  <div class="mt-auto pt-8">
+                    <label 
+                      class="w-full bg-white text-[#ff3e3e] px-6 py-3.5 rounded-xl font-bold
+                             hover:bg-opacity-90 transition-all duration-300 shadow-lg
+                             flex items-center justify-center gap-3 cursor-pointer font-['Inter']"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span>Select Video File</span>
+                      <input 
+                        #fileInput
+                        type="file"
+                        accept="video/*"
+                        (change)="handleFileSelection($event)"
+                        class="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  
+    <!-- user guidance -->
+    <div class="max-w-4xl mx-auto mt-8 mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 rounded">
+      <strong>Tip:</strong> For best results, record a clear, well-lit video of your lips while speaking the phrase. Keep your face centered and speak naturally. Videos should be at least 4 seconds long.
+    </div>
+  
+    <!-- prediction result -->
+    <!-- Removed the direct display of prediction results as requested -->
+  
+    <!-- loading spinner -->
+    <div *ngIf="isLoading && !videoBlob" class="flex justify-center items-center mt-8">
+      <div class="animate-spin rounded-full h-12 w-12 border-4 border-[#ff3e3e] border-t-transparent"></div>
+      <span class="ml-4 text-[#ff3e3e] font-bold text-lg">Processing video, please wait...</span>
+    </div>
+  
+    <!-- error message -->
+    <div *ngIf="errorMessage" class="max-w-4xl mx-auto mt-4 p-4 bg-red-50 border-l-4 border-red-400 text-red-900 rounded">
+      {{ errorMessage }}
+    </div>
+  
+    <!-- video result -->
+    <div *ngIf="videoBlob" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-1 sm:p-2 md:p-6 overflow-y-auto">
+      <div class="w-full min-h-screen sm:min-h-0 sm:max-w-lg md:max-w-2xl lg:max-w-4xl py-10 sm:py-0">
+        <app-video-result 
+          [videoBlob]="videoBlob"
+          (restart)="handleRestart()">
+        </app-video-result>
+      </div>
+    </div>
+  
+    <!-- camera modal -->
+    <div *ngIf="showCameraModal" 
+         class="fixed top-0 left-0 right-0 z-50 flex justify-center items-start min-h-screen pt-24 p-2"
+         role="dialog"
+         aria-labelledby="camera-modal-title"
+         aria-modal="true">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+           [class.opacity-0]="isModalClosing"
+           (click)="closeCameraModal()">
+      </div>
+      
+      <div class="relative bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden transition-all duration-300"
+           [class.opacity-0]="isModalClosing">
+        <!-- modal header -->
+        <div class="bg-[#ff3e3e] text-white h-[40px] flex justify-between items-center px-4">
+          <span class="text-[15px] font-['Inter']">Camera Recording</span>
+          <button 
+            (click)="closeCameraModal()"
+            class="text-white/90 hover:text-white transition-colors"
+            aria-label="Close modal"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- camera preview -->
+        <div class="relative bg-black w-full aspect-[4/3] max-h-[60vw] sm:max-h-[360px] rounded-b-xl overflow-hidden">
+          <video 
+            #videoElement 
+            autoplay 
+            playsinline 
+            class="absolute top-0 left-0 w-full h-full object-cover -scale-x-100"
+          ></video>
+
+          <canvas #canvas 
+                  class="absolute top-0 left-0 w-full h-full pointer-events-none rounded"
+                  [width]="canvasWidth"
+                  [height]="canvasHeight">
+          </canvas>
+
+          <!-- recording indicator -->
+          <div *ngIf="isRecording" 
+               class="absolute top-4 left-4 flex items-center gap-2 bg-black/50 
+                      text-white px-3 py-1.5 rounded-lg text-sm font-['Inter']">
+            <span class="animate-pulse w-2.5 h-2.5 rounded-full bg-red-500"></span>
+            Recording
+          </div>
+
+          <!-- frame counter -->
+          <div *ngIf="isRecording" 
+               class="absolute top-4 right-4 bg-black/50 text-white px-3 py-1.5 
+                      rounded-lg text-sm font-['Inter']">
+            Frames: {{currentFrameCount}}/{{REQUIRED_FRAMES}}
+          </div>
+
+          <!-- lips visibility message -->
+          <div *ngIf="!areLipsVisible && !isModalClosing" 
+               class="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div class="text-center p-6 bg-white/10 rounded-xl backdrop-blur-sm">
+              <div class="text-white text-lg font-['Inter'] font-medium mb-2">
+                Lips Not Detected
+              </div>
+              <p class="text-white/80 text-sm font-['Inter'] max-w-xs">
+                Please ensure your lips are clearly visible in the camera view
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- controls -->
+        <div class="p-6 bg-gray-50">
+          <!-- guidance message -->
+          <p class="text-gray-600 text-center mb-4 text-sm font-['Inter']">
+            Please ensure your lips are clearly visible in the camera view
+          </p>
+          
+          <div class="flex justify-center gap-4">
+            <!-- record button -->
+            <button 
+              *ngIf="!isRecording"
+              (click)="startRecording()"
+              [disabled]="!areLipsVisible"
+              class="bg-[#ff3e3e] text-white px-6 py-3 rounded-lg font-bold
+                     hover:bg-opacity-90 transition-all duration-300 shadow-lg
+                     flex items-center justify-center gap-2 w-40 font-['Inter']
+                     disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span class="w-3 h-3 rounded-full bg-white"></span>
+              <span>Record</span>
+            </button>
+
+            <!-- stop button -->
+            <button 
+              *ngIf="isRecording"
+              (click)="stopRecording()"
+              class="bg-[#ff3e3e] text-white px-6 py-3 rounded-lg font-bold
+                     hover:bg-opacity-90 transition-all duration-300 shadow-lg
+                     flex items-center justify-center gap-2 w-40 font-['Inter']"
+            >
+              <span class="w-3 h-3 bg-white"></span>
+              <span>Stop</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>

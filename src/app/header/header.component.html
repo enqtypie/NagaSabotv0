@@ -1,0 +1,39 @@
+<!-- header.component.html -->
+<header class="bg-[#ff3e3e] text-white p-4 fixed w-full top-0 z-50">
+  <nav class="flex justify-between items-center max-w-7xl mx-auto relative">
+    <a routerLink="/" (click)="handleTitleClick($event)" class="text-2xl font-bold font-['Poppins'] tracking-tight whitespace-nowrap cursor-pointer">
+      <span class="text-red-800">Naga</span>
+      <span class="text-white">Sabot</span>
+    </a>
+    <!-- Hamburger for mobile -->
+    <button (click)="isMenuOpen = !isMenuOpen" class="md:hidden ml-2 focus:outline-none" aria-label="Open navigation menu">
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+    <!-- Nav links -->
+    <div class="hidden md:flex gap-8 ml-8">
+      <button 
+        (click)="scrollToSection('about')" 
+        class="hover:opacity-80 cursor-pointer font-['Inter'] whitespace-nowrap">
+        About
+      </button>
+      <button 
+        (click)="scrollToSection('faqs')" 
+        class="hover:opacity-80 cursor-pointer font-['Inter'] whitespace-nowrap">
+        FAQs
+      </button>
+      <button 
+        (click)="scrollToSection('permissions')" 
+        class="hover:opacity-80 cursor-pointer font-['Inter'] whitespace-nowrap">
+        Permissions
+      </button>
+    </div>
+    <!-- Mobile menu -->
+    <div *ngIf="isMenuOpen" class="absolute right-0 top-16 w-48 bg-[#ff3e3e] rounded-xl shadow-lg flex flex-col gap-2 p-4 md:hidden animate-fade-in">
+      <button (click)="scrollToSection('about'); isMenuOpen=false" class="text-left py-2 px-2 rounded hover:bg-white/10 font-['Inter']">About</button>
+      <button (click)="scrollToSection('faqs'); isMenuOpen=false" class="text-left py-2 px-2 rounded hover:bg-white/10 font-['Inter']">FAQs</button>
+      <button (click)="scrollToSection('permissions'); isMenuOpen=false" class="text-left py-2 px-2 rounded hover:bg-white/10 font-['Inter']">Permissions</button>
+    </div>
+  </nav>
+</header>

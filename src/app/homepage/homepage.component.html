@@ -1,0 +1,352 @@
+<main class="min-h-screen bg-white">
+  <!-- design design -->
+  <section class="relative min-h-screen pt-16 bg-gradient-to-br from-[#ff4d4d] to-[#ff7070]">
+    <div class="absolute inset-0 bg-grid-white/[0.05] bg-[length:32px_32px]"></div>
+    
+    <div class="container mx-auto px-6 py-16">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <!-- text part -->
+        <div class="space-y-10 relative order-2 lg:order-1">
+          <div class="space-y-6">
+            <h1 class="text-2xl text-white/90 leading-relaxed font-['Poppins'] tracking-tight">
+              A Web-App Bikol-Naga Dialect Lip-Reading System for Visual Speech Recognition 
+              using CNN and LSTM Algorithms.
+            </h1>
+          </div>
+          
+          <p class="text-lg text-white/80 leading-relaxed max-w-lg font-['Inter']">
+            Experience seamless understanding with our AI-powered lipreading technology.
+          </p>
+
+          <div class="flex gap-6">
+            <button 
+              (click)="navigateToTryItOut()"
+              class="group relative px-8 py-4 bg-white text-[#ff3e3e] rounded-xl font-medium
+                     hover:shadow-xl transition-all duration-300 overflow-hidden font-['Inter']"
+            >
+              <span class="relative z-10">Try it now</span>
+              <div class="absolute inset-0 bg-gradient-to-r from-white to-white/90 
+                          transform scale-x-0 group-hover:scale-x-100 
+                          transition-transform duration-300 origin-left"></div>
+            </button>
+          </div>
+        </div>
+
+        <!-- image part -->
+        <div class="relative group order-1 lg:order-2">
+          <!-- background decoration -->
+          <div class="absolute -inset-4 bg-gradient-to-r from-white/20 to-transparent 
+                      rounded-2xl blur-2xl transform group-hover:scale-105 transition-transform duration-500"></div>
+          
+          <!-- image container -->
+          <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-transparent p-1">
+            <div class="overflow-hidden rounded-xl">
+              <img 
+                [src]="'/assets/images/group-people-talking.jpg'"
+                alt="People communicating"
+                class="w-full aspect-[4/3] object-cover transform transition-all duration-500 
+                       group-hover:scale-105"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- about section -->
+  <section id="about" class="py-24 scroll-mt-16 bg-gray-50">
+    <div class="container mx-auto px-4">
+      <div class="max-w-4xl mx-auto text-center space-y-16">
+        <header>
+          <h2 class="text-4xl md:text-6xl font-bold text-[#ff3e3e] font-['Poppins'] tracking-tight">About Our Technology</h2>
+        </header>
+        <div class="grid md:grid-cols-2 gap-12">
+          <div class="space-y-6 p-8 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+            <div class="w-16 h-16 mx-auto bg-[#ff3e3e]/10 rounded-xl flex items-center justify-center">
+              <span class="text-3xl">🧠</span>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 font-['Poppins'] tracking-tight">Neural Networks</h3>
+            <p class="text-gray-700 leading-relaxed font-['Inter']">
+              Leveraging Convolutional Neural Networks (CNNs) for advanced visual feature extraction,
+              enabling precise lip movement recognition in the Bikol-Naga dialect.
+            </p>
+          </div>
+          <div class="space-y-6 p-8 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+            <div class="w-16 h-16 mx-auto bg-[#ff3e3e]/10 rounded-xl flex items-center justify-center">
+              <span class="text-3xl">🔄</span>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 font-['Poppins'] tracking-tight">LSTM Technology</h3>
+            <p class="text-gray-700 leading-relaxed font-['Inter']">
+              Utilizing Long Short-Term Memory networks to process temporal sequences,
+              ensuring accurate interpretation of continuous speech patterns.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQs section -->
+  <section id="faqs" class="py-24 scroll-mt-16 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gray-50 transform -skew-y-3"></div>
+    <div class="container mx-auto px-4 relative">
+    <div class="max-w-6xl mx-auto">
+      <header class="text-center mb-16">
+        <h2 class="text-4xl md:text-6xl font-bold text-[#ff3e3e] mb-6 font-['Poppins'] tracking-tight">Frequently Asked Questions</h2>
+        <p class="text-xl text-gray-600 font-['Inter']">Everything you need to know about NagaSabot</p>
+      </header>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- FAQ 1 -->
+        <div class="group bg-white hover:bg-gradient-to-br hover:from-[#ff3e3e] hover:to-[#ff5252] 
+                    rounded-2xl shadow-lg p-8 transition-all duration-300 hover:shadow-xl">
+          <div class="space-y-4 group-hover:text-white transition-colors duration-300">
+            <div class="w-12 h-12 bg-[#ff3e3e]/10 rounded-xl flex items-center justify-center 
+                        group-hover:bg-white/10 transition-colors duration-300">
+              <span class="text-2xl">🤔</span>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 group-hover:text-white font-['Poppins'] tracking-tight">What is NagaSabot?</h3>
+            <p class="text-gray-600 group-hover:text-white/90 font-['Inter']">
+              NagaSabot is a cutting-edge platform that uses artificial intelligence to perform 
+              lip-reading in the Bikol-Naga dialect. It combines CNN and LSTM technologies to 
+              help people with hearing disabilities better understand and communicate in their 
+              local language.
+            </p>
+          </div>
+        </div>
+
+        <!-- FAQ 2 -->
+        <div class="group bg-white hover:bg-gradient-to-br hover:from-[#ff3e3e] hover:to-[#ff5252] 
+                    rounded-2xl shadow-lg p-8 transition-all duration-300 hover:shadow-xl">
+          <div class="space-y-4 group-hover:text-white transition-colors duration-300">
+            <div class="w-12 h-12 bg-[#ff3e3e]/10 rounded-xl flex items-center justify-center 
+                        group-hover:bg-white/10 transition-colors duration-300">
+              <span class="text-2xl">💻</span>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 group-hover:text-white font-['Poppins'] tracking-tight">How does it work?</h3>
+            <p class="text-gray-600 group-hover:text-white/90 font-['Inter']">
+              Our system processes video input through advanced neural networks. The CNN analyzes 
+              visual features of lip movements, while the LSTM network interprets these movements 
+              as temporal sequences. This combination allows for accurate real-time translation of 
+              lip movements to text.
+            </p>
+          </div>
+        </div>
+
+        <!-- FAQ 3 -->
+        <div class="group bg-white hover:bg-gradient-to-br hover:from-[#ff3e3e] hover:to-[#ff5252] 
+                    rounded-2xl shadow-lg p-8 transition-all duration-300 hover:shadow-xl">
+          <div class="space-y-4 group-hover:text-white transition-colors duration-300">
+            <div class="w-12 h-12 bg-[#ff3e3e]/10 rounded-xl flex items-center justify-center 
+                        group-hover:bg-white/10 transition-colors duration-300">
+              <span class="text-2xl">🔒</span>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 group-hover:text-white font-['Poppins'] tracking-tight">Is my data secure?</h3>
+            <p class="text-gray-600 group-hover:text-white/90 font-['Inter']">
+              Yes! We prioritize your privacy and security. All video processing happens locally 
+              on your device, and we don't store any of your recordings. Our camera and storage 
+              access permissions are used solely for the lip-reading functionality.
+            </p>
+          </div>
+        </div>
+
+        <!-- FAQ 4 -->
+        <div class="group bg-white hover:bg-gradient-to-br hover:from-[#ff3e3e] hover:to-[#ff5252] 
+                    rounded-2xl shadow-lg p-8 transition-all duration-300 hover:shadow-xl">
+          <div class="space-y-4 group-hover:text-white transition-colors duration-300">
+            <div class="w-12 h-12 bg-[#ff3e3e]/10 rounded-xl flex items-center justify-center 
+                        group-hover:bg-white/10 transition-colors duration-300">
+              <span class="text-2xl">📱</span>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 group-hover:text-white font-['Poppins'] tracking-tight">What devices are supported?</h3>
+            <p class="text-gray-600 group-hover:text-white/90 font-['Inter']">
+              NagaSabot works on most modern devices with a camera, including smartphones, 
+              tablets, and computers. For optimal performance, we recommend using a device 
+              with a good quality front-facing camera and updated browser.
+            </p>
+          </div>
+        </div>
+
+        <!-- FAQ 5 -->
+        <div class="group bg-white hover:bg-gradient-to-br hover:from-[#ff3e3e] hover:to-[#ff5252] 
+                    rounded-2xl shadow-lg p-8 transition-all duration-300 hover:shadow-xl">
+          <div class="space-y-4 group-hover:text-white transition-colors duration-300">
+            <div class="w-12 h-12 bg-[#ff3e3e]/10 rounded-xl flex items-center justify-center 
+                        group-hover:bg-white/10 transition-colors duration-300">
+              <span class="text-2xl">🌐</span>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 group-hover:text-white font-['Poppins'] tracking-tight">Can I use it offline?</h3>
+            <p class="text-gray-600 group-hover:text-white/90 font-['Inter']">
+              Currently, NagaSabot requires an internet connection for initial loading, but 
+              once loaded, the core lip-reading features work offline. We're working on a 
+              fully offline-capable version for future releases.
+            </p>
+          </div>
+        </div>
+
+        <!-- FAQ 6 -->
+        <div class="group bg-white hover:bg-gradient-to-br hover:from-[#ff3e3e] hover:to-[#ff5252] 
+                    rounded-2xl shadow-lg p-8 transition-all duration-300 hover:shadow-xl">
+          <div class="space-y-4 group-hover:text-white transition-colors duration-300">
+            <div class="w-12 h-12 bg-[#ff3e3e]/10 rounded-xl flex items-center justify-center 
+                        group-hover:bg-white/10 transition-colors duration-300">
+              <span class="text-2xl">🎯</span>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 group-hover:text-white font-['Poppins'] tracking-tight">How accurate is it?</h3>
+            <p class="text-gray-600 group-hover:text-white/90 font-['Inter']">
+              Our system doesnt have a model yet but we plan to achieve an average accuracy rate of 85% in controlled environments. 
+              Factors like lighting, camera quality, and clear pronunciation can affect accuracy. 
+              We're constantly improving our algorithms for better performance.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+   </div>
+  </section>
+
+  <!-- permissions section -->
+  <section id="permissions" class="py-24 scroll-mt-16">
+    <div class="container mx-auto px-4">
+      <header class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="text-4xl md:text-6xl font-bold text-[#ff3e3e] mb-6 font-['Poppins'] tracking-tight">Get Started</h2>
+        <p class="text-xl text-gray-600 font-['Inter']">
+          Choose how you'd like to use NagaSabot by granting the necessary permissions
+        </p>
+      </header>
+
+      <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <!-- camera permission card -->
+        <div class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#ff3e3e] to-[#ff6b6b] p-8 text-white flex flex-col h-full">
+          <div class="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-white/10 rounded-full blur-2xl transform 
+                      group-hover:scale-150 transition-transform duration-700"></div>
+          <div class="relative space-y-6 flex-1 flex flex-col">
+            <span class="block text-6xl">📷</span>
+            <h3 class="text-2xl font-bold font-['Poppins'] tracking-tight">Camera Access</h3>
+            <p class="text-white/90 leading-relaxed font-['Inter']">
+              Enable your camera for real-time lip-reading analysis. Your privacy and security are our top priority.
+            </p>
+            <!-- Loading state -->
+            <div *ngIf="cameraLoading" class="flex items-center justify-center space-x-2">
+              <div class="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span class="text-white/90">Requesting permission...</span>
+            </div>
+            <!-- Success state -->
+            <div *ngIf="cameraGranted" class="flex items-center justify-center space-x-2 text-green-300">
+              <span class="text-2xl">✓</span>
+              <span>Camera access granted</span>
+            </div>
+            <!-- Error state -->
+            <div *ngIf="cameraError" class="flex items-center justify-center space-x-2 text-red-300">
+              <span class="text-2xl">⚠️</span>
+              <span>{{ cameraError }}</span>
+            </div>
+            <div class="flex-1"></div>
+            <!-- Button (only show if not granted) -->
+            <button 
+              *ngIf="!cameraGranted"
+              (click)="requestCameraAccess()"
+              [disabled]="cameraLoading"
+              class="w-full bg-white text-[#ff3e3e] px-8 py-4 rounded-full font-bold 
+                     hover:bg-opacity-90 transition-all duration-300 shadow-lg font-['Inter']
+                     disabled:opacity-50 disabled:cursor-not-allowed mt-auto"
+            >
+              {{ cameraLoading ? 'Requesting...' : 'Enable Camera' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- storage permission card -->
+        <div class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#ff5252] to-[#ff8080] p-8 text-white flex flex-col h-full">
+          <div class="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-white/10 rounded-full blur-2xl transform 
+                      group-hover:scale-150 transition-transform duration-700"></div>
+          <div class="relative space-y-6 flex-1 flex flex-col">
+            <span class="block text-6xl">📤</span>
+            <h3 class="text-2xl font-bold font-['Poppins'] tracking-tight">Storage Access</h3>
+            <p class="text-white/90 leading-relaxed font-['Inter']">
+              Upload existing videos for analysis. Process pre-recorded content at your convenience.
+            </p>
+            <!-- Loading state -->
+            <div *ngIf="storageLoading" class="flex items-center justify-center space-x-2">
+              <div class="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span class="text-white/90">Requesting permission...</span>
+            </div>
+            <!-- Success state -->
+            <div *ngIf="storageGranted" class="flex items-center justify-center space-x-2 text-green-300">
+              <span class="text-2xl">✓</span>
+              <span>Storage access granted</span>
+            </div>
+            <!-- Error state -->
+            <div *ngIf="storageError" class="flex items-center justify-center space-x-2 text-red-300">
+              <span class="text-2xl">⚠️</span>
+              <span>{{ storageError }}</span>
+            </div>
+            <div class="flex-1"></div>
+            <!-- Button (only show if not granted) -->
+            <button 
+              *ngIf="!storageGranted"
+              (click)="requestStorageAccess()"
+              [disabled]="storageLoading"
+              class="w-full bg-white text-[#ff5252] px-8 py-4 rounded-full font-bold 
+                     hover:bg-opacity-90 transition-all duration-300 shadow-lg font-['Inter']
+                     disabled:opacity-50 disabled:cursor-not-allowed mt-auto"
+            >
+              {{ storageLoading ? 'Requesting...' : 'Enable Storage' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <footer class="bg-[#ff3e3e] text-white py-16">
+    <div class="container mx-auto px-6">
+      <div class="flex flex-col items-center text-center space-y-6">
+        <div>
+          <h3 class="text-3xl font-bold mb-4">NagaSabot</h3>
+          <p class="text-white/80 max-w-md">
+            Breaking communication barriers through technology.
+          </p>
+        </div>
+        <div>
+          <p class="text-white/80">
+            Have questions? Reach out to us at support&#64;nagasabot.com
+          </p>
+        </div>
+        <div class="w-full pt-8 mt-8 border-t border-white/20 text-white/60">
+          © 2024 NagaSabot. All rights reserved.
+        </div>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<style>
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+  }
+
+  .animate-fade-in-delay {
+    animation: fadeIn 0.8s ease-out 0.3s forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-delay-2 {
+    animation: fadeIn 0.8s ease-out 0.6s forwards;
+    opacity: 0;
+  }
+
+  .bg-grid-white {
+    background-image: linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px);
+  }
+</style>
