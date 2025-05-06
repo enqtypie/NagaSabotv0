@@ -1,0 +1,108 @@
+<!-- camera modal -->
+<div class="fixed top-0 left-0 right-0 z-50 flex justify-center items-start min-h-screen pt-24 p-2"
+     role="dialog"
+     aria-labelledby="camera-modal-title"
+     aria-modal="true">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+       [class.opacity-0]="isModalClosing"
+       (click)="closeCameraModal()">
+  </div>
+  
+  <div class="relative bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden transition-all duration-300"
+       [class.opacity-0]="isModalClosing">
+    <!-- modal header -->
+    <div class="bg-[#ff3e3e] text-white h-[40px] flex justify-between items-center px-4">
+      <span class="text-[15px] font-['Inter']">Camera Recording</span>
+      <button 
+        (click)="closeCameraModal()"
+        class="text-white/90 hover:text-white transition-colors"
+        aria-label="Close modal"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- camera preview -->
+    <div class="relative bg-black w-full aspect-[4/3] rounded-b-xl overflow-hidden mx-auto">
+      <video 
+        #videoElement 
+        autoplay 
+        playsinline 
+        class="absolute top-0 left-0 w-full h-full object-contain -scale-x-100 rounded-lg"
+      ></video>
+
+      <canvas #canvas 
+              class="absolute top-0 left-0 w-full h-full pointer-events-none rounded-lg object-contain"
+              [width]="canvasWidth"
+              [height]="canvasHeight">
+      </canvas>
+
+      <!-- recording indicator -->
+      <div *ngIf="isRecording" 
+           class="absolute top-4 left-4 flex items-center gap-2 bg-black/50 
+                  text-white px-3 py-1.5 rounded-lg text-sm font-['Inter']">
+        <span class="animate-pulse w-2.5 h-2.5 rounded-full bg-red-500"></span>
+        Recording
+      </div>
+
+      <!-- frame counter -->
+      <div *ngIf="isRecording" 
+           class="absolute top-4 right-4 bg-black/50 text-white px-3 py-1.5 
+                  rounded-lg text-sm font-['Inter']">
+        <div class="w-32 bg-gray-200 rounded-full h-2.5">
+          <div class="bg-[#ff3e3e] h-2.5 rounded-full" [style.width.%]="(currentFrameCount / REQUIRED_FRAMES) * 100"></div>
+        </div>
+        <div class="text-center mt-1">{{ currentFrameCount }}/75</div>
+      </div>
+
+      <!-- lips visibility message -->
+      <div *ngIf="!areLipsVisible && !isModalClosing" 
+           class="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="text-center p-6 bg-white/10 rounded-xl backdrop-blur-sm">
+          <div class="text-white text-lg font-['Inter'] font-medium mb-2">
+            Lips Not Detected
+          </div>
+          <p class="text-white/80 text-sm font-['Inter'] max-w-xs">
+            Please ensure your lips are clearly visible in the camera view
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- controls -->
+    <div class="p-6 bg-gray-50">
+      <!-- guidance message -->
+      <p class="text-gray-600 text-center mb-4 text-sm font-['Inter']">
+        Please ensure your lips are clearly visible in the camera view
+      </p>
+      
+      <div class="flex justify-center gap-4">
+        <!-- record button -->
+        <button 
+          *ngIf="!isRecording"
+          (click)="startRecording()"
+          [disabled]="!areLipsVisible"
+          class="bg-[#ff3e3e] text-white px-6 py-3 rounded-lg font-bold
+                 hover:bg-opacity-90 transition-all duration-300 shadow-lg
+                 flex items-center justify-center gap-2 w-40 font-['Inter']
+                 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span class="w-3 h-3 rounded-full bg-white"></span>
+          <span>Record</span>
+        </button>
+
+        <!-- stop button -->
+        <button 
+          *ngIf="isRecording"
+          (click)="stopRecording()"
+          class="bg-[#ff3e3e] text-white px-6 py-3 rounded-lg font-bold
+                 hover:bg-opacity-90 transition-all duration-300 shadow-lg
+                 flex items-center justify-center gap-2 w-40 font-['Inter']"
+        >
+          <span class="w-3 h-3 bg-white"></span>
+          <span>Stop</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div> 
