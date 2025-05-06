@@ -50,29 +50,27 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 # Model file path
 MODEL_PATH = os.path.join(os.path.dirname(__file__), 'nagsabot_full_model_complete15-1.keras')
 
-# Download and load the model
-try:
-    # Check if model exists, if not download it
-    if not os.path.exists(MODEL_PATH):
-        logger.info("Model not found, downloading from Google Drive...")
-        model_url = "https://drive.google.com/uc?id=1BTKaVJtgorknUBC5AB7Qq8nMOy4S_t1-"
-        gdown.download(model_url, MODEL_PATH, quiet=False)
-        logger.info("Model downloaded successfully")
-    else:
-        logger.info("Model already exists, skipping download")
-    
-    logger.info(f"Loading model from {MODEL_PATH}")
-    model = tf.keras.models.load_model(MODEL_PATH, compile=False)  # Don't compile to save memory
-    logger.info("Model loaded successfully")
-except Exception as e:
-    logger.error(f"Failed to load model: {e}")
-    model = None
+# Remove model loading from startup
+# model = None  # Remove this line if present
+model = None  # Initialize as None
+model_loaded = False  # Track if model is loaded
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/upload', methods=['POST'])
 def upload_video():
+    global model, model_loaded
+    if not model_loaded:
+        try:
+            logger.info(f"Loading model from {MODEL_PATH}")
+            model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+            model_loaded = True
+            logger.info("Model loaded successfully (lazy-loaded)")
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            return jsonify({'error': 'Model not loaded', 'status': 'error'}), 500
+    
     if 'video' not in request.files:
         return jsonify({'error': 'No video file provided'}), 400
     
@@ -83,9 +81,6 @@ def upload_video():
     
     if not allowed_file(video_file.filename):
         return jsonify({'error': 'File type not allowed'}), 400
-    
-    if model is None:
-        return jsonify({'error': 'Model not loaded'}), 500
     
     try:
         # Generate unique filename
