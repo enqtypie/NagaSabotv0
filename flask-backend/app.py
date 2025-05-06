@@ -9,6 +9,7 @@ import tensorflow as tf # type: ignore
 import logging
 import gc
 import gdown # type: ignore
+import traceback
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -69,7 +70,8 @@ def upload_video():
             logger.info("Model loaded successfully (lazy-loaded)")
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
-            return jsonify({'error': 'Model not loaded', 'status': 'error'}), 500
+            logger.error(traceback.format_exc())
+            return jsonify({'error': 'Model not loaded', 'status': 'error', 'details': str(e)}), 500
     
     if 'video' not in request.files:
         return jsonify({'error': 'No video file provided'}), 400
