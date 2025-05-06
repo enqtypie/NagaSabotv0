@@ -34,9 +34,10 @@ export class TryItOutComponent implements OnDestroy, AfterViewInit {
   currentFrameCount = 0;
   isFrameCollectionComplete = false;
   canvasWidth = 640;
-  canvasHeight = 360;
+  canvasHeight = 480; // 4:3 ratio
   isLoading = false;
   errorMessage: string | null = null;
+  private hasRequestedPermission = false;
 
   constructor(
     private videoService: VideoService,
@@ -80,6 +81,36 @@ export class TryItOutComponent implements OnDestroy, AfterViewInit {
     }
   }
 
+  private initializeCanvas() {
+    if (this.videoElement && this.videoElement.nativeElement && this.canvas && this.canvas.nativeElement) {
+      const video = this.videoElement.nativeElement;
+      const canvas = this.canvas.nativeElement;
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      
+      // Get the video's intrinsic dimensions
+      const videoWidth = video.videoWidth || 640;
+      const videoHeight = video.videoHeight || 480;
+      
+      // Set canvas dimensions taking into account device pixel ratio for sharpness
+      this.canvasWidth = videoWidth * devicePixelRatio;
+      this.canvasHeight = videoHeight * devicePixelRatio;
+      
+      canvas.width = this.canvasWidth;
+      canvas.height = this.canvasHeight;
+      
+      // Scale down the drawing context to counteract the pixel ratio scaling
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.scale(devicePixelRatio, devicePixelRatio);
+      }
+      
+      // Set the CSS size to match the video display size
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.objectFit = 'contain';
+    }
+  }
+
   async openCameraModal() {
     if (!isPlatformBrowser(this.platformId)) {
       console.error('Camera access is only available in browser environments');
@@ -110,25 +141,38 @@ export class TryItOutComponent implements OnDestroy, AfterViewInit {
         throw new Error('getUserMedia is not supported in this browser');
       }
 
+      // First, check if we already have permission
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      const hasPermission = devices.some(device => device.kind === 'videoinput' && device.label !== '');
 
-      // Get device with best capabilities for 4:3 aspect ratio
-      let idealWidth = 640;
-      let idealHeight = 480; // 4:3 aspect ratio
-      
+      if (!hasPermission && !this.hasRequestedPermission) {
+        // Request permission first with minimal constraints
+        await navigator.mediaDevices.getUserMedia({ 
+          video: true 
+        }).then(stream => {
+          // Stop the temporary stream
+          stream.getTracks().forEach(track => track.stop());
+          this.hasRequestedPermission = true;
+        }).catch(err => {
+          throw new Error('Camera permission denied');
+        });
+      }
+
+      // Now request with our desired constraints
       this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          width: { ideal: idealWidth },
-          height: { ideal: idealHeight },
+          width: { ideal: 640 },
+          height: { ideal: 480 }, // 4:3 ratio
           aspectRatio: { ideal: 4/3 },
-          frameRate: { ideal: 30, max: 60 }, // Reduced frame rate to save resources
-          facingMode: 'user',
-          deviceId: videoDevices[0]?.deviceId
+          frameRate: { ideal: 30 },
+          facingMode: 'user'
         }
       });
 
       await this.waitForViewInitialization();
+      
+      // Initialize canvas after video element is ready
+      this.initializeCanvas();
       
       // Lazy load the faceLandmarker only when needed
       if (!this.faceLandmarker) {
@@ -140,24 +184,22 @@ export class TryItOutComponent implements OnDestroy, AfterViewInit {
       await new Promise<void>((resolve) => {
         this.videoElement.nativeElement.onloadedmetadata = () => {
           this.videoElement.nativeElement.play();
-          
-          // Update canvas size based on actual video dimensions
-          const videoTrack = this.mediaStream?.getVideoTracks()[0];
-          if (videoTrack) {
-            const settings = videoTrack.getSettings();
-            console.log('Actual camera settings:', settings);
-            // Set canvas size based on actual camera dimensions while maintaining aspect ratio
-            this.updateCanvasSize();
-          } else {
-            this.updateCanvasSize();
-          }
-          
-          window.addEventListener('resize', this.updateCanvasSize);
-          window.addEventListener('orientationchange', this.updateCanvasSize);
+          this.initializeCanvas(); // Re-initialize canvas with actual video dimensions
           resolve();
-          this.startFaceTracking(); // Only start face tracking, not recording
+          this.startFaceTracking();
         };
       });
+
+      // Add event listeners for orientation changes
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => this.initializeCanvas(), 100);
+      });
+      
+      // Add event listener for window resize
+      window.addEventListener('resize', () => {
+        this.initializeCanvas();
+      });
+
     } catch (err: any) {
       console.error('Camera error:', err);
       alert(this.getErrorMessage(err));
@@ -281,11 +323,14 @@ export class TryItOutComponent implements OnDestroy, AfterViewInit {
 
   private getErrorMessage(error: any): string {
     const messages: { [key: string]: string } = {
-      'NotAllowedError': 'Please make sure you have granted camera permissions.',
-      'NotFoundError': 'No camera device found.',
-      'NotReadableError': 'Camera is in use by another application.',
-      'OverconstrainedError': 'Camera does not support the requested constraints.',
-      'StreamApiNotSupportedError': 'Stream API is not supported in this browser.'
+      'NotAllowedError': 'Camera access was denied. Please allow camera access in your browser settings and try again.',
+      'NotFoundError': 'No camera device found. Please ensure your device has a camera.',
+      'NotReadableError': 'Camera is in use by another application. Please close other apps using the camera.',
+      'OverconstrainedError': 'Your camera does not support the required settings. Please try using a different camera.',
+      'StreamApiNotSupportedError': 'Your browser does not support camera access. Please try a different browser.',
+      'SecurityError': 'Camera access is not allowed in this context. Please ensure you are using HTTPS or localhost.',
+      'AbortError': 'Camera access was aborted. Please try again.',
+      'TypeError': 'Camera access failed. Please check your browser settings and try again.'
     };
 
     return `Unable to access camera. ${messages[error.name] || `Error: ${error.message || 'Unknown error occurred'}`}`;
@@ -297,8 +342,8 @@ export class TryItOutComponent implements OnDestroy, AfterViewInit {
       this.showCameraModal = false;
       this.isModalClosing = false;
       this.stopCamera();
-      window.removeEventListener('resize', this.updateCanvasSize);
-      window.removeEventListener('orientationchange', this.updateCanvasSize);
+      window.removeEventListener('orientationchange', () => this.initializeCanvas());
+      window.removeEventListener('resize', () => this.initializeCanvas());
     }, 300);
   }
 
@@ -310,7 +355,7 @@ export class TryItOutComponent implements OnDestroy, AfterViewInit {
     this.currentFrameCount = 0;
     this.isFrameCollectionComplete = false;
     
-    // Configure MediaRecorder with quality settings
+    // Configure MediaRecorder with quality settings and 4:3 ratio
     this.mediaRecorder = new MediaRecorder(this.mediaStream, {
       mimeType: 'video/webm;codecs=vp9',
       videoBitsPerSecond: 2500000 // 2.5 Mbps
@@ -418,36 +463,5 @@ export class TryItOutComponent implements OnDestroy, AfterViewInit {
 
   ngOnDestroy() {
     this.stopCamera();
-  }
-
-  updateCanvasSize = () => {
-    if (this.videoElement && this.videoElement.nativeElement) {
-      const videoEl = this.videoElement.nativeElement;
-      const rect = videoEl.getBoundingClientRect();
-      
-      // Get the actual video dimensions
-      const videoWidth = videoEl.videoWidth || 640;
-      const videoHeight = videoEl.videoHeight || 480;
-      
-      // Calculate aspect ratio
-      const aspectRatio = videoWidth / videoHeight;
-      
-      // Set canvas dimensions
-      if (aspectRatio >= 4/3) {
-        // Video is wider than 4:3, use width as the constraint
-        this.canvasWidth = Math.floor(rect.width);
-        this.canvasHeight = Math.floor(rect.width / aspectRatio);
-      } else {
-        // Video is taller than 4:3, use height as the constraint
-        this.canvasHeight = Math.floor(rect.height);
-        this.canvasWidth = Math.floor(rect.height * aspectRatio);
-      }
-      
-      // Ensure canvas is always visible
-      this.canvasWidth = Math.max(this.canvasWidth, 320);
-      this.canvasHeight = Math.max(this.canvasHeight, 240);
-      
-      console.log('Canvas dimensions updated:', this.canvasWidth, 'x', this.canvasHeight);
-    }
   }
 }
