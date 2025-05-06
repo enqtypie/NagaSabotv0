@@ -86,28 +86,40 @@ export class TryItOutComponent implements OnDestroy, AfterViewInit {
       const video = this.videoElement.nativeElement;
       const canvas = this.canvas.nativeElement;
       const devicePixelRatio = window.devicePixelRatio || 1;
-      
-      // Get the video's intrinsic dimensions
-      const videoWidth = video.videoWidth || 640;
-      const videoHeight = video.videoHeight || 480;
-      
-      // Set canvas dimensions taking into account device pixel ratio for sharpness
-      this.canvasWidth = videoWidth * devicePixelRatio;
-      this.canvasHeight = videoHeight * devicePixelRatio;
-      
+
+      // Always use 4:3 ratio for canvas
+      let width = video.videoWidth || 640;
+      let height = video.videoHeight || 480;
+
+      // Force 4:3 ratio
+      if (width / height > 4 / 3) {
+        width = height * 4 / 3;
+      } else {
+        height = width * 3 / 4;
+      }
+
+      this.canvasWidth = width * devicePixelRatio;
+      this.canvasHeight = height * devicePixelRatio;
+
       canvas.width = this.canvasWidth;
       canvas.height = this.canvasHeight;
-      
+
       // Scale down the drawing context to counteract the pixel ratio scaling
       const ctx = canvas.getContext('2d');
       if (ctx) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any previous transforms
         ctx.scale(devicePixelRatio, devicePixelRatio);
       }
-      
-      // Set the CSS size to match the video display size
+
+      // Set the CSS size to match the 4:3 display size
       canvas.style.width = '100%';
       canvas.style.height = '100%';
       canvas.style.objectFit = 'contain';
+
+      // Also set the video element to match 4:3
+      video.style.width = '100%';
+      video.style.height = '100%';
+      video.style.objectFit = 'contain';
     }
   }
 

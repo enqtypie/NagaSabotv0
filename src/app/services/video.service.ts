@@ -21,9 +21,10 @@ export class VideoService {
         if (response.status === 'error') {
           throw new Error(response.error || 'Unknown error occurred');
         }
-        
+        // Use supabase_url if present, otherwise fallback to local preview
+        const videoUrl = response.supabase_url || URL.createObjectURL(videoFile);
         return {
-          videoUrl: URL.createObjectURL(videoFile),
+          videoUrl,
           phrase: response.top_prediction || 'No phrase detected',
           topPredictions: response.top_predictions || [],
           metrics: response.metrics || {

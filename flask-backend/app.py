@@ -10,6 +10,7 @@ import logging
 import gc
 import gdown # type: ignore
 import traceback
+import requests
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -105,6 +106,25 @@ except Exception as e:
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Supabase configuration
+SUPABASE_URL = "https://dhblfdgqtvsyyfjifhgn.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRoYmxmZGdxdHZzeXlmamlmaGduIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjU0MTQwNSwiZXhwIjoyMDYyMTE3NDA1fQ.wK5aygRzve2SufjpKTEFi8qtjdcPKZvTibayQ4cQzoU"
+SUPABASE_BUCKET = "videos"
+
+def upload_to_supabase(file_path, dest_filename):
+    url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{dest_filename}"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/octet-stream"
+    }
+    with open(file_path, "rb") as f:
+        response = requests.post(url, headers=headers, data=f)
+    if response.status_code in (200, 201):
+        return f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{dest_filename}"
+    else:
+        raise Exception(f"Supabase upload failed: {response.text}")
+
 @app.route('/upload', methods=['POST'])
 def upload_video():
     global model, model_loaded
@@ -134,13 +154,25 @@ def upload_video():
         
         logger.info(f"Video saved to {filepath}, processing with model")
         
+        # Upload to Supabase
+        supabase_url = upload_to_supabase(filepath, unique_filename)
+        logger.info(f"Uploaded video to Supabase: {supabase_url}")
+        
         # Get lipreading result from the model
         result = predict_lipreading(filepath, model)
         
         logger.info(f"Model prediction: {result}")
         
-        # Force garbage collection to free memory
+        # Explicitly delete large objects and force garbage collection
+        del video_file
         gc.collect()
+        
+        # Remove the uploaded file after processing
+        try:
+            os.remove(filepath)
+            logger.info(f"Deleted uploaded file: {filepath}")
+        except Exception as e:
+            logger.warning(f"Failed to delete uploaded file: {filepath}, error: {e}")
         
         # Check if the prediction was successful
         if result.get('status') == 'error':
@@ -149,9 +181,10 @@ def upload_video():
                 'status': 'error'
             }), 400
         
-        # Return enhanced response with top predictions and metrics
+        # Return enhanced response with top predictions and metrics and Supabase URL
         return jsonify({
             'status': 'success',
+            'supabase_url': supabase_url,
             'top_prediction': result.get('top_prediction', 'No phrase detected'),
             'top_predictions': result.get('top_predictions', []),
             'metrics': result.get('metrics', {})
@@ -159,7 +192,8 @@ def upload_video():
         
     except Exception as e:
         logger.error(f"Error processing video: {e}")
-        # Force garbage collection on error
+        # Explicitly delete large objects and force garbage collection on error
+        del video_file
         gc.collect()
         return jsonify({'error': str(e), 'status': 'error'}), 500
 

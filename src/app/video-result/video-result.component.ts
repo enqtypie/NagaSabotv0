@@ -66,9 +66,6 @@ export class VideoResultComponent implements OnInit {
     this.isLoading = true;
     this.error = null;
     
-    // Create local URL for preview
-    this.result.videoUrl = URL.createObjectURL(this.videoBlob);
-    
     const file = new File([this.videoBlob], 'recorded-video.webm', { type: 'video/webm' });
     console.log('Uploading video from result component:', file);
     console.log('File size:', file.size);
@@ -78,7 +75,7 @@ export class VideoResultComponent implements OnInit {
       next: (response) => {
         console.log('Upload response:', response);
         this.result = {
-          videoUrl: this.result.videoUrl,
+          videoUrl: response.videoUrl,
           phrase: response.phrase,
           topPredictions: response.topPredictions,
           metrics: response.metrics,
