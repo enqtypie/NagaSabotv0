@@ -125,7 +125,7 @@ def upload_to_supabase(file_path, dest_filename):
     else:
         raise Exception(f"Supabase upload failed: {response.text}")
 
-@app.route('/upload', methods=['POST'])
+@app.route('/upload', methods=['POST','GET'])
 def upload_video():
     global model, model_loaded
     if model is None:
