@@ -25,11 +25,12 @@ if gpus:
     except RuntimeError as e:
         print(f"Memory growth setting error: {e}")
 
-# TensorFlow memory settings already configured at the top of the file
-
 # Set up simplified logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("NagaSabot")
+
+# Define mp_face_mesh - THIS IS THE MISSING PART
+mp_face_mesh = mp.solutions.face_mesh
 
 # Constants - exactly matching training notebook/tester
 TOTAL_FRAMES = 75
