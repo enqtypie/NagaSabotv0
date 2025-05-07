@@ -9,15 +9,23 @@ import gc
 from typing import Tuple, Dict, List, Optional, Union
 from collections import OrderedDict
 
-# Configure TensorFlow to use memory growth
+# Initialize TensorFlow memory settings
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
     try:
         # Memory growth needs to be set before GPUs have been initialized
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
+        
+        # Optionally limit memory usage
+        tf.config.experimental.set_virtual_device_configuration(
+            gpus[0],
+            [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)]
+        )
     except RuntimeError as e:
         print(f"Memory growth setting error: {e}")
+
+# TensorFlow memory settings already configured at the top of the file
 
 # Set up simplified logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -176,19 +184,215 @@ def calculate_metrics_from_confidence(confidence: float) -> dict:
         "accuracy": accuracy
     }
 
+# Global model variable to avoid reloading
+_global_model = None
+
+# Function to get or initialize the model
+def get_model():
+    global _global_model
+    if _global_model is None:
+        try:
+            # Download model if not exists
+            from download_model import download_model
+            model_path = download_model()
+            
+            # Load the model with optimized settings
+            _global_model = tf.keras.models.load_model(model_path, compile=False)
+            logger.info("Model loaded successfully")
+        except Exception as e:
+            logger.error(f"Error loading model: {e}")
+            raise
+    return _global_model
+
+# Create a standalone function to match the import in app.py
+def predict_lipreading(video_path: str, model=None) -> Dict[str, object]:
+    """
+    Run the full lipreading pipeline and return prediction with detailed metrics.
+    Memory-optimized version of the original function.
+    
+    Args:
+        video_path: Path to the video file
+        model: Optional pre-loaded model (if None, will use shared model)
+        
+    Returns:
+        Dictionary with prediction results
+    """
+    try:
+        logger.info(f"Processing video: {video_path}")
+        
+        # Use provided model or get global model
+        if model is None:
+            model = get_model()
+            
+        # Process video in streaming fashion
+        extracted_frames = _extract_lip_frames_efficiently(video_path)
+        
+        if not extracted_frames:
+            return {
+                "status": "error", 
+                "message": "Failed to extract frames from video", 
+                "top_predictions": [], 
+                "metrics": {}
+            }
+        
+        frames_array, open_mouth_ratio = extracted_frames
+        
+        # Check if enough frames have open mouth (talking)
+        if open_mouth_ratio < 0.3:  # Less than 30% of frames have open mouth
+            logger.warning("No significant lip movement detected")
+            return {
+                "status": "error",
+                "message": "No significant lip movement detected. Please ensure you are speaking clearly.",
+                "top_predictions": [],
+                "metrics": {}
+            }
+        
+        # Make prediction with memory-efficient approach
+        with tf.device('/CPU:0'):  # Force CPU to avoid GPU memory issues
+            # Reshape to match model input shape
+            input_data = frames_array.reshape(1, TOTAL_FRAMES, LIP_HEIGHT, LIP_WIDTH, CHANNELS)
+            
+            # Make prediction with reduced verbosity
+            prediction = model.predict(input_data, verbose=0)[0]
+        
+        # Get top prediction
+        predicted_class = np.argmax(prediction)
+        confidence = float(prediction[predicted_class])
+        
+        # Get top 3 predictions
+        top3_indices = np.argsort(prediction)[-3:][::-1]
+        top_predictions = []
+        
+        for idx in top3_indices:
+            phrase = BIKOL_NAGA_PHRASES[idx] if idx < len(BIKOL_NAGA_PHRASES) else f'Unknown ({idx})'
+            pred_confidence = float(prediction[idx])
+            top_predictions.append({
+                "phrase": phrase,
+                "confidence": pred_confidence
+            })
+        
+        # Calculate metrics
+        metrics = calculate_metrics_from_confidence(confidence)
+        
+        logger.info(f"Top prediction: {BIKOL_NAGA_PHRASES[predicted_class]}, Confidence: {confidence:.4f}")
+        
+        # Force garbage collection to free memory
+        del frames_array
+        gc.collect()
+        
+        return {
+            "status": "success",
+            "top_prediction": BIKOL_NAGA_PHRASES[predicted_class],
+            "top_predictions": top_predictions,
+            "metrics": metrics
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in predict_lipreading: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "error", 
+            "message": f"Error in prediction: {str(e)}", 
+            "top_predictions": [], 
+            "metrics": {}
+        }
+
+def _extract_lip_frames_efficiently(video_path: str) -> Optional[Tuple[np.ndarray, float]]:
+    """Extract lip frames from video in a streaming manner to reduce memory usage."""
+    try:
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            logger.error(f"Failed to open video file: {video_path}")
+            return None
+
+        # Pre-allocate the frames array to avoid dynamic resizing
+        frames_buffer = np.zeros((TOTAL_FRAMES, LIP_HEIGHT, LIP_WIDTH, CHANNELS), dtype=np.float32)
+        
+        # Initialize face mesh
+        with mp_face_mesh.FaceMesh(
+            max_num_faces=1,
+            refine_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        ) as face_mesh:
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            frame_sample_interval = max(1, total_frames // TOTAL_FRAMES)
+            
+            open_mouth_count = 0
+            frames_collected = 0
+            frame_idx = 0
+            
+            # Process frames at intervals to avoid loading all frames
+            while cap.isOpened() and frames_collected < TOTAL_FRAMES:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                # Process only at sample intervals to save memory
+                if frame_idx % frame_sample_interval == 0:
+                    # Flip the frame for selfie-view (as in original code)
+                    frame = cv2.flip(frame, 1)
+                    
+                    # Process frame with MediaPipe
+                    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    results = face_mesh.process(rgb_frame)
+                    
+                    if results.multi_face_landmarks:
+                        face_landmarks = results.multi_face_landmarks[0]
+                        
+                        # Check if mouth is open
+                        if is_mouth_open(face_landmarks):
+                            open_mouth_count += 1
+                            
+                        # Extract lip region
+                        lip_region, *_ = get_fixed_centered_lip_region(frame, face_landmarks)
+                        lip_region = enhance_lip_region(lip_region)
+                        
+                        # Store directly in pre-allocated array (normalized)
+                        frames_buffer[frames_collected] = lip_region.astype(np.float32) / 255.0
+                        frames_collected += 1
+                        
+                        # Release frame reference to free memory
+                        del lip_region
+                        
+                        if frames_collected >= TOTAL_FRAMES:
+                            break
+                
+                frame_idx += 1
+                
+                # Release frame reference to free memory
+                del frame
+                
+            cap.release()
+            
+            # If we didn't collect enough frames, pad with the last frame
+            if 0 < frames_collected < TOTAL_FRAMES:
+                last_frame = frames_buffer[frames_collected-1].copy()
+                for i in range(frames_collected, TOTAL_FRAMES):
+                    frames_buffer[i] = last_frame
+                
+            # Calculate open mouth ratio
+            open_mouth_ratio = open_mouth_count / max(1, frames_collected)
+            
+            if frames_collected == 0:
+                logger.warning("No frames collected from video")
+                return None
+                
+            return frames_buffer, open_mouth_ratio
+            
+    except Exception as e:
+        logger.error(f"Error extracting frames: {e}")
+        return None
+
 class LipReadingModel:
     def __init__(self):
         try:
             # Set memory-efficient TensorFlow session configuration
             self._setup_tf_config()
             
-            # Download model if not exists
-            from download_model import download_model
-            model_path = download_model()
-            
-            # Load the model with optimized settings
-            self.model = self._load_model_efficiently(model_path)
-            logger.info("Model loaded successfully")
+            # Use the shared model
+            self.model = get_model()
             
             # Initialize MediaPipe Face Mesh with reduced resources
             self.mp_face_mesh = mp.solutions.face_mesh
@@ -235,37 +439,8 @@ class LipReadingModel:
         try:
             logger.info(f"Starting video processing for: {video_path}")
             
-            # Process video in streaming fashion instead of loading all frames at once
-            extracted_frames = self._extract_lip_frames_stream(video_path)
-            
-            if not extracted_frames:
-                return {
-                    "status": "error", 
-                    "message": "Failed to extract frames from video", 
-                    "top_predictions": [], 
-                    "metrics": {}
-                }
-            
-            frames_array, open_mouth_ratio = extracted_frames
-            
-            # Check if enough frames have open mouth (talking)
-            if open_mouth_ratio < 0.3:  # Less than 30% of frames have open mouth
-                logger.warning("No significant lip movement detected")
-                return {
-                    "status": "error",
-                    "message": "No significant lip movement detected. Please ensure you are speaking clearly.",
-                    "top_predictions": [],
-                    "metrics": {}
-                }
-            
-            # Make prediction with memory-efficient batching
-            prediction_results = self._predict_efficiently(frames_array)
-            
-            # Force garbage collection to free memory
-            del frames_array
-            gc.collect()
-            
-            return prediction_results
+            # Use the optimized standalone function for prediction
+            return predict_lipreading(video_path, self.model)
             
         except Exception as e:
             logger.error(f"Error in predict: {e}")
@@ -280,125 +455,39 @@ class LipReadingModel:
 
     def _extract_lip_frames_stream(self, video_path: str) -> Optional[Tuple[np.ndarray, float]]:
         """Extract lip frames from video in a streaming manner to reduce memory usage."""
-        try:
-            cap = cv2.VideoCapture(video_path)
-            if not cap.isOpened():
-                logger.error(f"Failed to open video file: {video_path}")
-                return None
-
-            # Pre-allocate the frames array to avoid dynamic resizing
-            frames_buffer = np.zeros((TOTAL_FRAMES, LIP_HEIGHT, LIP_WIDTH, CHANNELS), dtype=np.float32)
-            
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            frame_sample_interval = max(1, total_frames // TOTAL_FRAMES)
-            
-            open_mouth_count = 0
-            frames_collected = 0
-            frame_idx = 0
-            
-            # Process frames at intervals to avoid loading all frames
-            while cap.isOpened() and frames_collected < TOTAL_FRAMES:
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                
-                # Process only at sample intervals to save memory
-                if frame_idx % frame_sample_interval == 0:
-                    # Process frame with MediaPipe
-                    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    results = self.face_mesh.process(rgb_frame)
-                    
-                    if results.multi_face_landmarks:
-                        face_landmarks = results.multi_face_landmarks[0]
-                        
-                        # Check if mouth is open
-                        if is_mouth_open(face_landmarks):
-                            open_mouth_count += 1
-                            
-                        # Extract lip region
-                        lip_region, *_ = get_fixed_centered_lip_region(frame, face_landmarks)
-                        lip_region = enhance_lip_region(lip_region)
-                        
-                        # Store directly in pre-allocated array (normalized)
-                        frames_buffer[frames_collected] = lip_region.astype(np.float32) / 255.0
-                        frames_collected += 1
-                        
-                        # Release frame reference to free memory
-                        del lip_region
-                        
-                        if frames_collected >= TOTAL_FRAMES:
-                            break
-                
-                frame_idx += 1
-                
-                # Release frame reference to free memory
-                del frame
-                
-            cap.release()
-            
-            # If we didn't collect enough frames, pad with the last frame
-            if 0 < frames_collected < TOTAL_FRAMES:
-                last_frame = frames_buffer[frames_collected-1].copy()
-                for i in range(frames_collected, TOTAL_FRAMES):
-                    frames_buffer[i] = last_frame
-                
-            # Calculate open mouth ratio
-            open_mouth_ratio = open_mouth_count / max(1, frames_collected)
-            
-            if frames_collected == 0:
-                logger.warning("No frames collected from video")
-                return None
-                
-            return frames_buffer, open_mouth_ratio
-            
-        except Exception as e:
-            logger.error(f"Error extracting frames: {e}")
-            return None
+        # This method is kept for backward compatibility
+        # But functionality is moved to _extract_lip_frames_efficiently 
+        return _extract_lip_frames_efficiently(video_path)
 
     def _predict_efficiently(self, frames_array: np.ndarray) -> Dict[str, object]:
-        """Make model prediction with memory efficiency in mind."""
-        try:
-            # Use batch prediction with small batch size to reduce memory usage
-            with tf.device('/CPU:0'):  # Force CPU to avoid GPU memory issues
-                # Reshape to match model input shape
-                input_data = frames_array.reshape(1, TOTAL_FRAMES, LIP_HEIGHT, LIP_WIDTH, CHANNELS)
-                
-                # Make prediction with reduced verbosity
-                prediction = self.model.predict(input_data, verbose=0)[0]
-            
-            # Get top prediction
-            predicted_class = np.argmax(prediction)
-            confidence = float(prediction[predicted_class])
-            
-            # Get top 3 predictions
-            top3_indices = np.argsort(prediction)[-3:][::-1]
-            top_predictions = []
-            
-            for idx in top3_indices:
-                phrase = BIKOL_NAGA_PHRASES[idx] if idx < len(BIKOL_NAGA_PHRASES) else f'Unknown ({idx})'
-                pred_confidence = float(prediction[idx])
-                top_predictions.append({
-                    "phrase": phrase,
-                    "confidence": pred_confidence
-                })
-            
-            # Calculate metrics
-            metrics = calculate_metrics_from_confidence(confidence)
-            
-            logger.info(f"Top prediction: {BIKOL_NAGA_PHRASES[predicted_class]}, Confidence: {confidence:.4f}")
-            
-            return {
-                "status": "success",
-                "top_prediction": BIKOL_NAGA_PHRASES[predicted_class],
-                "top_predictions": top_predictions,
-                "metrics": metrics
-            }
-            
-        except Exception as e:
-            logger.error(f"Error in prediction: {e}")
-            return {
-                "status": "error", 
-                "message": f"Error in prediction: {str(e)}", 
-                "top_predictions": [], 
-                "metrics": {}
-            }
+        """Method kept for backward compatibility."""
+        # Implementation moved to predict_lipreading function
+        # Reshape data for prediction
+        with tf.device('/CPU:0'):
+            input_data = frames_array.reshape(1, TOTAL_FRAMES, LIP_HEIGHT, LIP_WIDTH, CHANNELS)
+            prediction = self.model.predict(input_data, verbose=0)[0]
+        
+        # Get top prediction indices
+        top3_indices = np.argsort(prediction)[-3:][::-1]
+        predicted_class = top3_indices[0]
+        confidence = float(prediction[predicted_class])
+        
+        # Format predictions
+        top_predictions = []
+        for idx in top3_indices:
+            phrase = BIKOL_NAGA_PHRASES[idx] if idx < len(BIKOL_NAGA_PHRASES) else f'Unknown ({idx})'
+            pred_confidence = float(prediction[idx])
+            top_predictions.append({
+                "phrase": phrase,
+                "confidence": pred_confidence
+            })
+        
+        # Calculate metrics
+        metrics = calculate_metrics_from_confidence(confidence)
+        
+        return {
+            "status": "success",
+            "top_prediction": BIKOL_NAGA_PHRASES[predicted_class],
+            "top_predictions": top_predictions,
+            "metrics": metrics
+        }
