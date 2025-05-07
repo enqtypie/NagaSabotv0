@@ -131,6 +131,9 @@ def upload_video():
     if model is None:
         return jsonify({'error': 'Model not loaded'}), 500
     
+    if request.method == 'GET':
+        return jsonify({'message': 'Upload endpoint is live. Use POST with a video file.'}), 200
+    
     if 'video' not in request.files:
         return jsonify({'error': 'No video file provided'}), 400
     
