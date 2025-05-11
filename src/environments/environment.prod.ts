@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://nagasabotv0.onrender.com'
+  apiUrl: 'https://nagasabot-backend-cav6.onrender.com'
 }; 

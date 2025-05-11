@@ -41,7 +41,7 @@ CORS(app,
      resources={r"/*": {
          "origins": [
              "http://localhost:4200",  # Angular dev server
-             "https://nagasabotv0.onrender.com",  # Your deployed frontend
+             "https://nagasabotv0-quvx.onrender.com",  # Your deployed frontend
              "https://*.onrender.com"  # Any Render subdomain
          ],
          "methods": ["GET", "POST", "OPTIONS"],
@@ -56,7 +56,7 @@ CORS(app,
 # Add CORS headers to all responses
 ALLOWED_ORIGINS = [
     "http://localhost:4200",
-    "https://nagasabot.onrender.com"
+    "https://nagasabotv0-quvx.onrender.com"
 ]
 
 @app.after_request
