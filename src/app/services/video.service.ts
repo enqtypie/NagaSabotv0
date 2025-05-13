@@ -16,23 +16,28 @@ export class VideoService {
     const formData = new FormData();
     formData.append('video', videoFile);
 
-    return this.http.post<any>(`${this.apiUrl}/upload`, formData).pipe(
+    return this.http.post<any>(`${this.apiUrl}/predict`, formData).pipe(
       map(response => {
         if (response.status === 'error') {
-          throw new Error(response.error || 'Unknown error occurred');
+          throw new Error(response.message || 'Unknown error occurred');
         }
-        // Use supabase_url if present, otherwise fallback to local preview
-        const videoUrl = response.supabase_url || URL.createObjectURL(videoFile);
+
+        // Create video URL for preview
+        const videoUrl = URL.createObjectURL(videoFile);
+
+        // Get the top prediction from the first item in top_predictions
+        const topPrediction = response.top_predictions?.[0]?.phrase || 'No phrase detected';
+        const topConfidence = response.top_predictions?.[0]?.confidence || 0;
+
         return {
           videoUrl,
-          phrase: response.top_prediction || 'No phrase detected',
+          phrase: topPrediction,
           topPredictions: response.top_predictions || [],
-          metrics: response.metrics || {
-            confidence: 0,
-            precision: 0,
-            recall: 0,
-            f1_score: 0,
-            accuracy: 0
+          metrics: {
+            confidence: topConfidence,
+            open_mouth_ratio: response.metrics?.open_mouth_ratio || 0,
+            frames_processed: response.metrics?.frames_processed || 0,
+            processing_time: response.metrics?.processing_time || 0
           },
           timestamp: Date.now()
         };

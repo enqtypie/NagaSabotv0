@@ -10,7 +10,8 @@ import logging
 import gc
 import gdown # type: ignore
 import traceback
-import requests
+import requests # type: ignore
+import numpy as np # type: ignore
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -82,15 +83,15 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
-# Model file path
-MODEL_PATH = os.path.join(os.path.dirname(__file__), 'nagsabot_full_model_complete15-1.keras')
+# Model file path - Updated to new model
+MODEL_PATH = os.path.join(os.path.dirname(__file__), 'nagsabot_full_model_complete15.keras')
 
 # Download and load the model at startup
 try:
     # Check if model exists, if not download it
     if not os.path.exists(MODEL_PATH):
         logger.info("Model not found, downloading from Google Drive...")
-        model_url = "https://drive.google.com/uc?id=1BTKaVJtgorknUBC5AB7Qq8nMOy4S_t1-"
+        model_url = "https://drive.google.com/uc?id=13cTvPLbw2ldDC8qohurcGup2YDS8qOo_"
         gdown.download(model_url, MODEL_PATH, quiet=False)
         logger.info("Model downloaded successfully")
     else:
@@ -109,10 +110,12 @@ def allowed_file(filename):
 # Supabase configuration
 SUPABASE_URL = "https://dhblfdgqtvsyyfjifhgn.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRoYmxmZGdxdHZzeXlmamlmaGduIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjU0MTQwNSwiZXhwIjoyMDYyMTE3NDA1fQ.wK5aygRzve2SufjpKTEFi8qtjdcPKZvTibayQ4cQzoU"
-SUPABASE_BUCKET = "videos"
+VIDEOS_BUCKET = "videos"  # For original videos
+PREPROCESSED_BUCKET = "preprocessed-lips"  # For preprocessed lip videos
 
-def upload_to_supabase(file_path, dest_filename):
-    url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{dest_filename}"
+def upload_to_supabase(file_path, dest_filename, bucket_name):
+    """Upload file to specified Supabase bucket"""
+    url = f"{SUPABASE_URL}/storage/v1/object/{bucket_name}/{dest_filename}"
     headers = {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -121,84 +124,147 @@ def upload_to_supabase(file_path, dest_filename):
     with open(file_path, "rb") as f:
         response = requests.post(url, headers=headers, data=f)
     if response.status_code in (200, 201):
-        return f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{dest_filename}"
+        return f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}/{dest_filename}"
     else:
         raise Exception(f"Supabase upload failed: {response.text}")
 
-@app.route('/upload', methods=['POST','GET'])
-def upload_video():
-    global model, model_loaded
+def process_video(filepath):
+    """Common video processing logic for both upload and predict endpoints"""
     if model is None:
-        return jsonify({'error': 'Model not loaded'}), 500
+        raise Exception('Model not loaded')
     
-    if request.method == 'GET':
-        return jsonify({'message': 'Upload endpoint is live. Use POST with a video file.'}), 200
+    logger.info(f"Processing video: {filepath}")
+    result = predict_lipreading(filepath, model)
     
+    if result.get('status') == 'error':
+        raise Exception(result.get('message', 'Unknown error in video processing'))
+    
+    # Extract and format metrics
+    metrics = result.get('metrics', {})
+    processed_result = {
+        'status': 'success',
+        'top_prediction': result.get('top_prediction', 'No phrase detected'),
+        'top_predictions': result.get('top_predictions', []),
+        'metrics': {
+            'open_mouth_ratio': metrics.get('open_mouth_ratio', 0.0),
+            'frames_processed': metrics.get('frames_processed', 0),
+            'confidence_score': metrics.get('confidence_score', 0.0),
+            'processing_time': metrics.get('processing_time', 0.0)
+        }
+    }
+    
+    # If preprocessed video path is provided in the result, upload it
+    if 'preprocessed_video_path' in result:
+        try:
+            preprocessed_filename = f"preprocessed_{os.path.basename(filepath)}"
+            preprocessed_url = upload_to_supabase(
+                result['preprocessed_video_path'], 
+                preprocessed_filename,
+                PREPROCESSED_BUCKET
+            )
+            processed_result['preprocessed_video_url'] = preprocessed_url
+            logger.info(f"Uploaded preprocessed video to Supabase: {preprocessed_url}")
+            
+            # Clean up preprocessed video file
+            try:
+                os.remove(result['preprocessed_video_path'])
+                logger.info(f"Deleted preprocessed video file: {result['preprocessed_video_path']}")
+            except Exception as e:
+                logger.warning(f"Failed to delete preprocessed video file: {result['preprocessed_video_path']}, error: {e}")
+        except Exception as e:
+            logger.error(f"Failed to upload preprocessed video: {str(e)}")
+            # Don't fail the whole process if preprocessed upload fails
+            processed_result['preprocessed_video_url'] = None
+    
+    return processed_result
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    """New endpoint for direct prediction without storage"""
     if 'video' not in request.files:
-        return jsonify({'error': 'No video file provided'}), 400
+        return jsonify({'error': 'No video file provided', 'status': 'error'}), 400
     
     video_file = request.files['video']
     
     if video_file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+        return jsonify({'error': 'No selected file', 'status': 'error'}), 400
     
     if not allowed_file(video_file.filename):
-        return jsonify({'error': 'File type not allowed'}), 400
+        return jsonify({'error': 'File type not allowed', 'status': 'error'}), 400
     
     try:
-        # Generate unique filename
-        original_filename = secure_filename(video_file.filename)
-        file_extension = original_filename.rsplit('.', 1)[1].lower()
-        unique_filename = f"{uuid.uuid4()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_extension}"
-        
-        # Save the file
+        # Save temporarily
+        unique_filename = f"temp_{uuid.uuid4()}_{secure_filename(video_file.filename)}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
         video_file.save(filepath)
         
-        logger.info(f"Video saved to {filepath}, processing with model")
+        # Process video
+        result = process_video(filepath)
         
-        # Upload to Supabase
-        supabase_url = upload_to_supabase(filepath, unique_filename)
-        logger.info(f"Uploaded video to Supabase: {supabase_url}")
+        # Cleanup
+        try:
+            os.remove(filepath)
+            logger.info(f"Deleted temporary file: {filepath}")
+        except Exception as e:
+            logger.warning(f"Failed to delete temporary file: {filepath}, error: {e}")
         
-        # Get lipreading result from the model
-        result = predict_lipreading(filepath, model)
+        return jsonify(result), 200
         
-        logger.info(f"Model prediction: {result}")
-        
-        # Explicitly delete large objects and force garbage collection
+    except Exception as e:
+        logger.error(f"Error processing video: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+    finally:
         del video_file
         gc.collect()
+
+@app.route('/upload', methods=['POST','GET'])
+def upload_video():
+    """Updated upload endpoint with storage"""
+    if request.method == 'GET':
+        return jsonify({'message': 'Upload endpoint is live. Use POST with a video file.'}), 200
+    
+    if 'video' not in request.files:
+        return jsonify({'error': 'No video file provided', 'status': 'error'}), 400
+    
+    video_file = request.files['video']
+    
+    if video_file.filename == '':
+        return jsonify({'error': 'No selected file', 'status': 'error'}), 400
+    
+    if not allowed_file(video_file.filename):
+        return jsonify({'error': 'File type not allowed', 'status': 'error'}), 400
+    
+    try:
+        # Generate unique filename and save
+        original_filename = secure_filename(video_file.filename)
+        file_extension = original_filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{uuid.uuid4()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_extension}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        video_file.save(filepath)
         
-        # Remove the uploaded file after processing
+        # Upload original video to videos bucket
+        video_url = upload_to_supabase(filepath, unique_filename, VIDEOS_BUCKET)
+        logger.info(f"Uploaded original video to Supabase: {video_url}")
+        
+        # Process video
+        result = process_video(filepath)
+        result['video_url'] = video_url  # URL of the original video
+        
+        # Cleanup
         try:
             os.remove(filepath)
             logger.info(f"Deleted uploaded file: {filepath}")
         except Exception as e:
             logger.warning(f"Failed to delete uploaded file: {filepath}, error: {e}")
         
-        # Check if the prediction was successful
-        if result.get('status') == 'error':
-            return jsonify({
-                'error': result.get('message', 'Unknown error'),
-                'status': 'error'
-            }), 400
-        
-        # Return enhanced response with top predictions and metrics and Supabase URL
-        return jsonify({
-            'status': 'success',
-            'supabase_url': supabase_url,
-            'top_prediction': result.get('top_prediction', 'No phrase detected'),
-            'top_predictions': result.get('top_predictions', []),
-            'metrics': result.get('metrics', {})
-        }), 200
+        return jsonify(result), 200
         
     except Exception as e:
-        logger.error(f"Error processing video: {e}")
-        # Explicitly delete large objects and force garbage collection on error
+        logger.error(f"Error processing video: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+    finally:
         del video_file
         gc.collect()
-        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

@@ -1,156 +1,159 @@
 <app-header></app-header>
-<main class="min-h-screen">
-    <!-- banner -->
-    <section class="relative h-[400px] bg-[#ff3e3e] overflow-hidden">
-        <div class="absolute inset-0">
-            <img 
-              src="/assets/images/img2.jpg"
-              alt="People communicating in sign language"
-              class="w-full h-full object-cover"
-            />
-            <div class="absolute inset-0 bg-[#ff3e3e]/30"></div>
-          </div>
 
-    </section>
-  
-    <!-- get started -->
-    <section class="py-16 px-4 -mt-24 relative z-10">
-      <div class="max-w-4xl mx-auto">
-        <!-- main content -->
-        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden">
-          <div class="p-8 md:p-12">
-            <!-- header -->
-            <div class="text-center mb-12">
-              <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-['Poppins'] tracking-tight">Get Started</h1>
-              <p class="text-gray-600 text-lg font-['Inter'] leading-relaxed">
-                You can either open your storage to upload a video or grant access to your camera to record yourself
-              </p>
+<div class="min-h-screen">
+  <!-- Heads-up Dialog (always visible regardless of ngIf) -->
+  <app-heads-up-dialog *ngIf="showHeadsUpDialog" (close)="onDialogClose()"></app-heads-up-dialog>
+
+  <!-- Camera Modal - Moved outside the *ngIf to ensure it can always appear -->
+  <app-camera 
+    *ngIf="showCameraModal"
+    (videoRecorded)="handleVideoRecorded($event)"
+    (close)="showCameraModal = false">
+  </app-camera>
+
+  <!-- Main content - hidden when dialog is showing -->
+  <main *ngIf="!showHeadsUpDialog">
+      <!-- banner -->
+      <section class="relative h-[400px] bg-[#ff3e3e] overflow-hidden">
+          <div class="absolute inset-0">
+              <img 
+                src="/assets/images/img2.jpg"
+                alt="People communicating in sign language"
+                class="w-full h-full object-cover"
+              />
+              <div class="absolute inset-0 bg-[#ff3e3e]/30"></div>
             </div>
-  
-            <!-- options -->
-            <div class="grid md:grid-cols-2 gap-8">
-              <!-- camera option -->
-              <div class="group relative bg-[#ff3e3e] rounded-2xl p-8 text-white hover:shadow-xl 
-                          transition-all duration-300 hover:-translate-y-1 flex flex-col">
-                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full 
-                            blur-2xl transform group-hover:scale-150 transition-transform duration-700"></div>
-                
-                <div class="relative flex-1 flex flex-col">
-                  <div class="space-y-6">
-                    <div class="inline-block p-4 bg-white/10 rounded-xl">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
+      </section>
+    
+      <!-- get started -->
+      <section class="py-16 px-4 -mt-24 relative z-10">
+        <div class="max-w-4xl mx-auto">
+          <!-- main content -->
+          <div class="bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <div class="p-8 md:p-12">
+              <!-- header -->
+              <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-['Poppins'] tracking-tight">Get Started</h1>
+                <p class="text-gray-600 text-lg font-['Inter'] leading-relaxed">
+                  You can either open your storage to upload a video or grant access to your camera to record yourself
+                </p>
+              </div>
+    
+              <!-- options -->
+              <div class="grid md:grid-cols-2 gap-8">
+                <!-- camera option -->
+                <div class="group relative bg-[#ff3e3e] rounded-2xl p-8 text-white hover:shadow-xl 
+                            transition-all duration-300 hover:-translate-y-1 flex flex-col">
+                  <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full 
+                              blur-2xl transform group-hover:scale-150 transition-transform duration-700"></div>
+                  
+                  <div class="relative flex-1 flex flex-col">
+                    <div class="space-y-6">
+                      <div class="inline-block p-4 bg-white/10 rounded-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      
+                      <div class="space-y-4">
+                        <h2 class="text-2xl font-bold font-['Poppins'] tracking-tight">Record via Camera</h2>
+                        <p class="text-white/90 leading-relaxed font-['Inter']">
+                          Record a video directly using your camera to begin the lip-reading process. 
+                          Ensure your face is clearly visible for accurate recognition.
+                        </p>
+                      </div>
                     </div>
-                    
-                    <div class="space-y-4">
-                      <h2 class="text-2xl font-bold font-['Poppins'] tracking-tight">Record via Camera</h2>
-                      <p class="text-white/90 leading-relaxed font-['Inter']">
-                        Record a video directly using your camera to begin the lip-reading process. 
-                        Ensure your face is clearly visible for accurate recognition.
-                      </p>
+    
+                    <div class="mt-auto pt-8">
+                      <button 
+                        (click)="openCameraModal()"
+                        class="w-full bg-white text-[#ff3e3e] px-6 py-3.5 rounded-xl font-bold
+                               hover:bg-opacity-90 transition-all duration-300 shadow-lg
+                               flex items-center justify-center gap-3 font-['Inter']"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <span>Start Recording</span>
+                      </button>
                     </div>
-                  </div>
-  
-                  <div class="mt-auto pt-8">
-                    <button 
-                      (click)="openCameraModal()"
-                      class="w-full bg-white text-[#ff3e3e] px-6 py-3.5 rounded-xl font-bold
-                             hover:bg-opacity-90 transition-all duration-300 shadow-lg
-                             flex items-center justify-center gap-3 font-['Inter']"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      <span>Start Recording</span>
-                    </button>
                   </div>
                 </div>
-              </div>
-  
-              <!-- upload option -->
-              <div class="group relative bg-[#ff3e3e] rounded-2xl p-8 text-white hover:shadow-xl 
-                          transition-all duration-300 hover:-translate-y-1 flex flex-col">
-                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full 
-                            blur-2xl transform group-hover:scale-150 transition-transform duration-700"></div>
-                
-                <div class="relative flex-1 flex flex-col">
-                  <div class="space-y-6">
-                    <div class="inline-block p-4 bg-white/10 rounded-xl">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
+    
+                <!-- upload option -->
+                <div class="group relative bg-[#ff3e3e] rounded-2xl p-8 text-white hover:shadow-xl 
+                            transition-all duration-300 hover:-translate-y-1 flex flex-col">
+                  <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full 
+                              blur-2xl transform group-hover:scale-150 transition-transform duration-700"></div>
+                  
+                  <div class="relative flex-1 flex flex-col">
+                    <div class="space-y-6">
+                      <div class="inline-block p-4 bg-white/10 rounded-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                      </div>
+                      
+                      <div class="space-y-4">
+                        <h2 class="text-2xl font-bold font-['Poppins'] tracking-tight">Upload via Device Storage</h2>
+                        <p class="text-white/90 leading-relaxed font-['Inter']">
+                          Upload a video clip from your device storage to start the lip-reading process. 
+                          Ensure the video clearly shows the speaker's face for accurate results.
+                        </p>
+                      </div>
                     </div>
-                    
-                    <div class="space-y-4">
-                      <h2 class="text-2xl font-bold font-['Poppins'] tracking-tight">Upload via Device Storage</h2>
-                      <p class="text-white/90 leading-relaxed font-['Inter']">
-                        Upload a video clip from your device storage to start the lip-reading process. 
-                        Ensure the video clearly shows the speaker's face for accurate results.
-                      </p>
+    
+                    <div class="mt-auto pt-8">
+                      <label 
+                        class="w-full bg-white text-[#ff3e3e] px-6 py-3.5 rounded-xl font-bold
+                               hover:bg-opacity-90 transition-all duration-300 shadow-lg
+                               flex items-center justify-center gap-3 cursor-pointer font-['Inter']"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span>Select Video File</span>
+                        <input 
+                          #fileInput
+                          type="file"
+                          accept="video/*"
+                          aria-label="Upload video file"
+                          title="Upload video file"
+                          (change)="handleFileSelection($event)"
+                          class="hidden"
+                        />
+                      </label>
                     </div>
-                  </div>
-  
-                  <div class="mt-auto pt-8">
-                    <label 
-                      class="w-full bg-white text-[#ff3e3e] px-6 py-3.5 rounded-xl font-bold
-                             hover:bg-opacity-90 transition-all duration-300 shadow-lg
-                             flex items-center justify-center gap-3 cursor-pointer font-['Inter']"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                      <span>Select Video File</span>
-                      <input 
-                        #fileInput
-                        type="file"
-                        accept="video/*"
-                        (change)="handleFileSelection($event)"
-                        class="hidden"
-                      />
-                    </label>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </section>
+      
+      <!-- loading spinner -->
+      <div *ngIf="isLoading && !videoBlob" class="flex justify-center items-center mt-8">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-[#ff3e3e] border-t-transparent"></div>
+        <span class="ml-4 text-[#ff3e3e] font-bold text-lg">Processing video, please wait...</span>
       </div>
-    </section>
-  
-    <!-- user guidance -->
-    <div class="max-w-4xl mx-auto mt-8 mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 rounded">
-      <strong>Tip:</strong> For best results, record a clear, well-lit video of your lips while speaking the phrase. Keep your face centered and speak naturally. Videos should be at least 4 seconds long.
-    </div>
-  
-    <!-- prediction result -->
-    <!-- Removed the direct display of prediction results as requested -->
-  
-    <!-- loading spinner -->
-    <div *ngIf="isLoading && !videoBlob" class="flex justify-center items-center mt-8">
-      <div class="animate-spin rounded-full h-12 w-12 border-4 border-[#ff3e3e] border-t-transparent"></div>
-      <span class="ml-4 text-[#ff3e3e] font-bold text-lg">Processing video, please wait...</span>
-    </div>
-  
-    <!-- error message -->
-    <div *ngIf="errorMessage" class="max-w-4xl mx-auto mt-4 p-4 bg-red-50 border-l-4 border-red-400 text-red-900 rounded">
-      {{ errorMessage }}
-    </div>
-  
-    <!-- video result -->
-    <div *ngIf="videoBlob" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-1 sm:p-2 md:p-6 overflow-y-auto">
-      <div class="w-full min-h-screen sm:min-h-0 sm:max-w-lg md:max-w-2xl lg:max-w-4xl py-10 sm:py-0">
-        <app-video-result 
-          [videoBlob]="videoBlob"
-          (restart)="handleRestart()">
-        </app-video-result>
+    
+      <!-- error message -->
+      <div *ngIf="errorMessage" class="max-w-4xl mx-auto mt-4 p-4 bg-red-50 border-l-4 border-red-400 text-red-900 rounded">
+        {{ errorMessage }}
       </div>
-    </div>
-  
-    <!-- camera component -->
-    <app-camera 
-      *ngIf="showCameraModal"
-      (videoRecorded)="handleVideoRecorded($event)"
-      (close)="showCameraModal = false">
-    </app-camera>
-  </main>
+    
+      <!-- video result -->
+      <div *ngIf="videoBlob" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-1 sm:p-2 md:p-6 overflow-y-auto">
+        <div class="w-full min-h-screen sm:min-h-0 sm:max-w-lg md:max-w-2xl lg:max-w-4xl py-10 sm:py-0">
+          <app-video-result 
+            [videoBlob]="videoBlob"
+            [predictionResult]="predictionResult"
+            [isLoading]="isLoading"
+            [error]="errorMessage"
+            (restart)="handleRestart()">
+          </app-video-result>
+        </div>
+      </div>
+    </main>
+</div>

@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { VideoService } from '../services/video.service';
 
@@ -9,10 +9,9 @@ export interface PredictionItem {
 
 export interface Metrics {
   confidence: number;
-  precision: number;
-  recall: number;
-  f1_score: number;
-  accuracy: number;
+  open_mouth_ratio: number;
+  frames_processed: number;
+  processing_time: number;
 }
 
 export interface VideoResult {
@@ -29,31 +28,19 @@ export interface VideoResult {
   imports: [CommonModule],
   templateUrl: './video-result.component.html'
 })
-export class VideoResultComponent implements OnInit {
-  @Input() videoBlob!: Blob;
+export class VideoResultComponent {
+  @Input() videoBlob: Blob | null = null;
+  @Input() predictionResult: VideoResult | null = null;
+  @Input() isLoading = false;
+  @Input() error: string | null = null;
   @Output() restart = new EventEmitter<void>();
-  
-  result: VideoResult = {
-    videoUrl: '',
-    phrase: 'Processing video...',
-    topPredictions: [],
-    metrics: {
-      confidence: 0,
-      precision: 0,
-      recall: 0,
-      f1_score: 0,
-      accuracy: 0
-    },
-    timestamp: Date.now()
-  };
-
-  isLoading = true;
-  error: string | null = null;
 
   constructor(private videoService: VideoService) {}
 
   ngOnInit() {
-    this.uploadVideo();
+    if (!this.predictionResult && this.videoBlob) {
+      this.uploadVideo();
+    }
   }
 
   private uploadVideo() {
@@ -67,54 +54,46 @@ export class VideoResultComponent implements OnInit {
     this.error = null;
     
     const file = new File([this.videoBlob], 'recorded-video.webm', { type: 'video/webm' });
-    console.log('Uploading video from result component:', file);
-    console.log('File size:', file.size);
     
-    // Upload directly to backend
     this.videoService.uploadVideo(file).subscribe({
       next: (response) => {
-        console.log('Upload response:', response);
-        this.result = {
-          videoUrl: response.videoUrl,
-          phrase: response.phrase,
-          topPredictions: response.topPredictions,
-          metrics: response.metrics,
-          timestamp: response.timestamp
-        };
+        this.predictionResult = response;
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error uploading video:', error);
-        this.error = 'Error processing video. Please try again.';
+        this.error = error.message || 'Error processing video. Please try again.';
         this.isLoading = false;
       }
     });
   }
 
   tryAgain() {
-    if (this.result.videoUrl) {
-      URL.revokeObjectURL(this.result.videoUrl);
+    if (this.predictionResult?.videoUrl) {
+      URL.revokeObjectURL(this.predictionResult.videoUrl);
     }
     this.restart.emit();
   }
 
-  get accuracyPercentage(): string {
-    return `${(this.result.metrics.accuracy * 100).toFixed(1)}%`;
-  }
-
   get confidencePercentage(): string {
-    return `${(this.result.metrics.confidence * 100).toFixed(1)}%`;
+    return this.predictionResult?.metrics?.confidence 
+      ? `${(this.predictionResult.metrics.confidence * 100).toFixed(1)}%`
+      : 'N/A';
   }
 
-  get precisionPercentage(): string {
-    return `${(this.result.metrics.precision * 100).toFixed(1)}%`;
+  get openMouthRatioPercentage(): string {
+    return this.predictionResult?.metrics?.open_mouth_ratio
+      ? `${(this.predictionResult.metrics.open_mouth_ratio * 100).toFixed(1)}%`
+      : 'N/A';
   }
 
-  get recallPercentage(): string {
-    return `${(this.result.metrics.recall * 100).toFixed(1)}%`;
+  get framesProcessed(): number {
+    return this.predictionResult?.metrics?.frames_processed || 0;
   }
 
-  get f1ScorePercentage(): string {
-    return `${(this.result.metrics.f1_score * 100).toFixed(1)}%`;
+  get processingTimeFormatted(): string {
+    return this.predictionResult?.metrics?.processing_time
+      ? `${this.predictionResult.metrics.processing_time.toFixed(2)}s`
+      : 'N/A';
   }
 } 

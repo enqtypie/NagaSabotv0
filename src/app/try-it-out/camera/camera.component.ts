@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, OnDestroy, PLATFORM_ID, Inject, AfterViewInit, Output, EventEmitter } from '@angular/core';
+import { Component, ViewChild, ElementRef, OnDestroy, PLATFORM_ID, Inject, AfterViewInit, Output, EventEmitter, Input } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 
 @Component({
@@ -13,6 +13,9 @@ export class CameraComponent implements OnDestroy, AfterViewInit {
 
   @Output() videoRecorded = new EventEmitter<Blob>();
   @Output() close = new EventEmitter<void>();
+
+  @Input() showHeadTiltWarning = false;
+  @Input() showMouthMovementFeedback = false;
 
   showCameraModal = true;
   isRecording = false;
@@ -31,8 +34,12 @@ export class CameraComponent implements OnDestroy, AfterViewInit {
   currentFrameCount = 0;
   isFrameCollectionComplete = false;
   canvasWidth = 640;
-  canvasHeight = 480;
+  canvasHeight = 640; // Changed to match 1:1 aspect ratio
   frameCount = 0;
+
+  headTiltAngle: number | null = null;
+  isMouthMoving = false;
+  Math = Math; // Make Math available in template
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object
@@ -79,19 +86,17 @@ export class CameraComponent implements OnDestroy, AfterViewInit {
       const canvas = this.canvas.nativeElement;
       const devicePixelRatio = window.devicePixelRatio || 1;
       
-      // Always use 4:3 ratio for canvas
-      let width = video.videoWidth || 640;
-      let height = video.videoHeight || 480;
-
-      // Force 4:3 ratio
-      if (width / height > 4 / 3) {
-        width = height * 4 / 3;
-      } else {
-        height = width * 3 / 4;
-      }
-
-      this.canvasWidth = width * devicePixelRatio;
-      this.canvasHeight = height * devicePixelRatio;
+      // Calculate the size for a 1:1 square format
+      // First get the original dimensions
+      let sourceWidth = video.videoWidth || 640;
+      let sourceHeight = video.videoHeight || 480;
+      
+      // Determine the square size based on the smaller dimension
+      const squareSize = Math.min(sourceWidth, sourceHeight);
+      
+      // Set the canvas dimensions to be square with device pixel ratio
+      this.canvasWidth = squareSize * devicePixelRatio;
+      this.canvasHeight = squareSize * devicePixelRatio;
 
       canvas.width = this.canvasWidth;
       canvas.height = this.canvasHeight;
@@ -103,15 +108,15 @@ export class CameraComponent implements OnDestroy, AfterViewInit {
         ctx.scale(devicePixelRatio, devicePixelRatio);
       }
 
-      // Set the CSS size to match the 4:3 display size
+      // Set the CSS size to match the square display size
       canvas.style.width = '100%';
       canvas.style.height = '100%';
-      canvas.style.objectFit = 'contain';
+      canvas.style.objectFit = 'cover';
 
-      // Also set the video element to match 4:3
+      // Also set the video element to match 1:1
       video.style.width = '100%';
       video.style.height = '100%';
-      video.style.objectFit = 'contain';
+      video.style.objectFit = 'cover';
     }
   }
 
@@ -137,8 +142,6 @@ export class CameraComponent implements OnDestroy, AfterViewInit {
       this.faceLandmarker = null;
     }
 
-    this.showCameraModal = true;
-
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error('getUserMedia is not supported in this browser');
@@ -150,8 +153,8 @@ export class CameraComponent implements OnDestroy, AfterViewInit {
       this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           width: { ideal: 640 },
-          height: { ideal: 480 },
-          aspectRatio: { ideal: 4/3 },
+          height: { ideal: 640 }, // Changed to match 1:1 aspect ratio
+          aspectRatio: { ideal: 1 }, // Changed to 1:1 aspect ratio
           frameRate: { ideal: 30 },
           facingMode: 'user',
           deviceId: videoDevices[0]?.deviceId
@@ -228,6 +231,12 @@ export class CameraComponent implements OnDestroy, AfterViewInit {
 
         ctx.clearRect(0, 0, this.canvas.nativeElement.width, this.canvas.nativeElement.height);
         
+        // Calculate offsets for centering face in 1:1 square
+        const videoWidth = this.videoElement.nativeElement.videoWidth;
+        const videoHeight = this.videoElement.nativeElement.videoHeight;
+        const squareSize = Math.min(videoWidth, videoHeight);
+        
+        // Get detection results from face landmarker
         const results = this.faceLandmarker.detectForVideo(
           this.videoElement.nativeElement,
           performance.now()
@@ -249,35 +258,66 @@ export class CameraComponent implements OnDestroy, AfterViewInit {
 
           const landmarks = results.faceLandmarks[0];
           if (landmarks) {
-            // Create a mirrored version of the landmarks
-            const mirroredLandmarks = landmarks.map((point: { x: number; y: number; z: number }) => ({
-              ...point,
-              x: 1 - point.x // Mirror the x coordinate
-            }));
+            // Create a mirrored and adjusted version of the landmarks for square aspect ratio
+            const mirroredLandmarks = landmarks.map((point: { x: number; y: number; z: number }) => {
+              // Mirror horizontally
+              let x = 1 - point.x;
+              
+              // Adjust coordinates for square aspect ratio if needed
+              if (videoWidth !== videoHeight) {
+                if (videoWidth > videoHeight) {
+                  // Landscape orientation - center horizontally
+                  const offsetX = (videoWidth - squareSize) / (2 * videoWidth);
+                  x = (1 - point.x - offsetX) * (videoWidth / squareSize);
+                  if (x < 0) x = 0;
+                  if (x > 1) x = 1;
+                } else {
+                  // Portrait orientation - center vertically
+                  const offsetY = (videoHeight - squareSize) / (2 * videoHeight);
+                  let y = (point.y - offsetY) * (videoHeight / squareSize);
+                  if (y < 0) y = 0;
+                  if (y > 1) y = 1;
+                  return { x, y, z: point.z };
+                }
+              }
+              
+              return { x, y: point.y, z: point.z };
+            });
 
-            // Draw only the lip connectors with mirrored landmarks
+            // Draw lip connectors with enhanced style
             drawingUtils.drawConnectors(
               mirroredLandmarks,
               FaceLandmarker.FACE_LANDMARKS_LIPS,
               { color: "#FFFFFF", lineWidth: 2 }
             );
 
-            // Draw lip points with mirrored landmarks
+            // Draw lip points with enhanced style
             const lipPoints = FaceLandmarker.FACE_LANDMARKS_LIPS.flat();
-            // Draw only every other lip point to reduce rendering load
             for (let i = 0; i < lipPoints.length; i += 2) {
               const index = lipPoints[i];
               const point = mirroredLandmarks[index];
-              if (!point) continue; // Skip if undefined
+              if (!point) continue;
               ctx.beginPath();
               ctx.arc(
                 point.x * this.canvas.nativeElement.width,
                 point.y * this.canvas.nativeElement.height,
-                2,
+                3, // Slightly larger points
                 0,
                 2 * Math.PI
               );
               ctx.fillStyle = '#FF3030';
+              ctx.fill();
+              
+              // Add glow effect
+              ctx.beginPath();
+              ctx.arc(
+                point.x * this.canvas.nativeElement.width,
+                point.y * this.canvas.nativeElement.height,
+                5,
+                0,
+                2 * Math.PI
+              );
+              ctx.fillStyle = 'rgba(255, 48, 48, 0.3)';
               ctx.fill();
             }
           }
@@ -330,7 +370,30 @@ export class CameraComponent implements OnDestroy, AfterViewInit {
     this.frameCount = 0;
     this.isFrameCollectionComplete = false;
     
-    this.mediaRecorder = new MediaRecorder(this.mediaStream, {
+    // Configure media recorder for square video
+    const videoTrack = this.mediaStream.getVideoTracks()[0];
+    const videoSettings = videoTrack.getSettings();
+    
+    // Create a square video with equal width and height
+    const squareSize = Math.min(videoSettings.width || 640, videoSettings.height || 640);
+    
+    // Create a new canvas for video recording in 1:1 format
+    const recordCanvas = document.createElement('canvas');
+    recordCanvas.width = squareSize;
+    recordCanvas.height = squareSize;
+    const recordCtx = recordCanvas.getContext('2d');
+    
+    // Create a MediaStream from the canvas
+    const recordStream = recordCanvas.captureStream(30); // 30fps
+    
+    // Add audio track if available
+    const audioTracks = this.mediaStream.getAudioTracks();
+    if (audioTracks.length > 0) {
+      recordStream.addTrack(audioTracks[0]);
+    }
+    
+    // Initialize MediaRecorder with optimal settings
+    this.mediaRecorder = new MediaRecorder(recordStream, {
       mimeType: 'video/webm;codecs=vp9',
       videoBitsPerSecond: 2500000 // 2.5 Mbps
     });
@@ -345,7 +408,46 @@ export class CameraComponent implements OnDestroy, AfterViewInit {
       this.handleRecordingComplete();
     };
 
+    // Start recording process
     this.mediaRecorder.start();
+    
+    // Start drawing video frames to the recording canvas
+    const drawVideoFrame = () => {
+      if (!this.isRecording) return;
+      
+      const video = this.videoElement.nativeElement;
+      
+      // Calculate source and destination parameters for a centered square crop
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      
+      let sourceX = 0;
+      let sourceY = 0;
+      let sourceSize = Math.min(videoWidth, videoHeight);
+      
+      if (videoWidth > videoHeight) {
+        // Landscape video - center horizontally
+        sourceX = (videoWidth - sourceSize) / 2;
+      } else {
+        // Portrait video - center vertically
+        sourceY = (videoHeight - sourceSize) / 2;
+      }
+      
+      // Draw the video frame on the recording canvas (cropped to square)
+      if (recordCtx) {
+        recordCtx.drawImage(
+          video,
+          sourceX, sourceY, sourceSize, sourceSize,
+          0, 0, squareSize, squareSize
+        );
+      }
+      
+      if (this.isRecording) {
+        requestAnimationFrame(drawVideoFrame);
+      }
+    };
+    
+    drawVideoFrame();
   }
 
   stopRecording() {
@@ -392,4 +494,20 @@ export class CameraComponent implements OnDestroy, AfterViewInit {
     window.removeEventListener('resize', this.handleResize);
     window.removeEventListener('orientationchange', this.handleOrientationChange);
   }
-} 
+
+  private async startFaceDetection() {
+    // This is a placeholder for face detection logic
+    // In a real implementation, you would use a face detection library
+    // like MediaPipe or TensorFlow.js to detect face landmarks
+    
+    // For demo purposes, we'll simulate random head tilt and mouth movement
+    setInterval(() => {
+      if (this.showHeadTiltWarning) {
+        this.headTiltAngle = Math.random() * 40 - 20; // Random angle between -20 and 20
+      }
+      if (this.showMouthMovementFeedback) {
+        this.isMouthMoving = Math.random() > 0.5;
+      }
+    }, 1000);
+  }
+}
