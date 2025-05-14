@@ -167,8 +167,8 @@ def enhance_lip_region(lip_frame, transformed_outer=None, transformed_inner=None
             lip_frame_with_outline = lip_frame_3ch.copy()
             outer_lip_points = np.array(transformed_outer, dtype=np.int32)
             inner_lip_points = np.array(transformed_inner, dtype=np.int32)
-            cv2.polylines(lip_frame_with_outline, [outer_lip_points], True, (0, 255, 0), 2)
-            cv2.polylines(lip_frame_with_outline, [inner_lip_points], True, (0, 255, 0), 1)
+            cv2.polylines(lip_frame_with_outline, [outer_lip_points], True, (255, 255, 255), 2)  # White color, 2px thickness
+            cv2.polylines(lip_frame_with_outline, [inner_lip_points], True, (255, 255, 255), 2)  # White color, 2px thickness
             alpha = 0.7
             lip_frame_final = cv2.addWeighted(lip_frame_3ch, 1-alpha, lip_frame_with_outline, alpha, 0)
         else:
